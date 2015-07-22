@@ -1,2 +1,3 @@
 # remin
-REdis adMIN
+REdis adMIN  
+("Relumin" - "Cluster function")
