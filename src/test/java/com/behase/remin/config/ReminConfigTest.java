@@ -4,8 +4,6 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import com.behase.remin.config.ReminConfig;
-
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j

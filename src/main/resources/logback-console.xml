@@ -6,11 +6,11 @@
 		</layout>
 	</appender>
 
-	<logger name="com.behase.remin" level="DEBUG" />
-	
-	<logger name="logging_operation" level="INFO" />
-	
+	<logger name="com.behase.remin" level="DEBUG"/>
+
+	<logger name="logging_operation" level="INFO"/>
+
 	<root level="INFO">
-		<appender-ref ref="STDOUT" />
+		<appender-ref ref="STDOUT"/>
 	</root>
 </included>

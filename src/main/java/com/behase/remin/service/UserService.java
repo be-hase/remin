@@ -2,9 +2,9 @@ package com.behase.remin.service;
 
 import java.util.List;
 
-import com.behase.remin.model.LoginUser;
 import org.springframework.security.core.userdetails.UserDetailsService;
 
+import com.behase.remin.model.LoginUser;
 
 public interface UserService extends UserDetailsService {
 	LoginUser getUser(String username) throws Exception;

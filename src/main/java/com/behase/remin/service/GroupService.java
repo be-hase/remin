@@ -11,11 +11,13 @@ import com.behase.remin.model.Notice;
 public interface GroupService {
 	Set<String> getGroups();
 
-	Group getGroup(String groupName) throws IOException;
+	Group getGroup(String groupName);
+
+	Group getGroupWithNoCheckConnection(String groupName);
 
 	boolean existsGroupName(String groupName);
 
-	void setGroup(String groupName, List<String> hostAndPorts) throws IOException;
+	void setGroup(String groupName, List<String> hostAndPorts);
 
 	Notice getGroupNotice(String groupName) throws IOException;
 

@@ -1,20 +1,18 @@
 package com.behase.remin.scheduler;
 
+import static com.behase.remin.model.NoticeItem.NoticeOperator;
+import static com.behase.remin.model.NoticeItem.NoticeValueType;
+import static com.behase.remin.model.NoticeJob.ResultValue;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import com.behase.remin.Constants;
-import com.behase.remin.model.Group;
-import com.behase.remin.model.Notice;
-import com.behase.remin.model.NoticeItem;
-import com.behase.remin.model.NoticeJob;
-import com.behase.remin.service.GroupService;
-import com.behase.remin.service.NodeService;
-import com.behase.remin.service.NotifyService;
+import com.google.common.net.HostAndPort;
 import org.apache.commons.lang3.StringUtils;
 import org.fluentd.logger.FluentLogger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,16 +24,22 @@ import org.springframework.stereotype.Component;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
+import com.behase.remin.Constants;
 import com.behase.remin.config.SchedulerConfig;
 import com.behase.remin.exception.ApiException;
+import com.behase.remin.model.Group;
+import com.behase.remin.model.Node;
+import com.behase.remin.model.Notice;
+import com.behase.remin.model.NoticeItem;
+import com.behase.remin.model.NoticeJob;
+import com.behase.remin.service.GroupService;
+import com.behase.remin.service.NodeService;
+import com.behase.remin.service.NotifyService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import lombok.extern.slf4j.Slf4j;
-
-import static com.behase.remin.model.NoticeItem.*;
-import static com.behase.remin.model.NoticeJob.*;
 
 @Slf4j
 @Component
@@ -86,7 +90,7 @@ public class NodeScheduler {
 			try {
 				Notice notice = groupService.getGroupNotice(groupName);
 				Group group = groupService.getGroup(groupName);
-				List<String> hostAndPorts = group.getHostAndPorts();
+				List<String> hostAndPorts = group.getNodes().stream().filter(node -> node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
 				Map<String, Map<String, String>> staticsInfos = Maps.newLinkedHashMap();
 
 				for (String hostAndPort : hostAndPorts) {
@@ -160,6 +164,15 @@ public class NodeScheduler {
 		}
 
 		List<NoticeJob> noticeJobs = Lists.newArrayList();
+
+		boolean notifyDisconnected = false;
+		if (notice.isNotifyWhenDisconnected()) {
+			List<String> disconnectedHostAndPorts = group.getNodes().stream().filter(node -> !node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
+			if (!disconnectedHostAndPorts.isEmpty()) {
+				notifyDisconnected = true;
+			}
+		}
+
 		for (NoticeItem item : notice.getItems()) {
 			List<ResultValue> resultValues = Lists.newArrayList();
 			for (Entry<String, Map<String, String>> e : staticsInfos.entrySet()) {
@@ -176,7 +189,7 @@ public class NodeScheduler {
 			}
 		}
 
-		if (!noticeJobs.isEmpty()) {
+		if (notifyDisconnected || !noticeJobs.isEmpty()) {
 			log.info("NOTIFY !! {}", noticeJobs);
 			notifyService.notify(group, notice, noticeJobs);
 		}
@@ -185,6 +198,10 @@ public class NodeScheduler {
 	}
 
 	public boolean isNotify(String valueType, String operator, String value, String threshold) {
+		if (value == null) {
+			return false;
+		}
+
 		boolean isNotify = false;
 
 		switch (NoticeValueType.getNoticeValueType(valueType)) {

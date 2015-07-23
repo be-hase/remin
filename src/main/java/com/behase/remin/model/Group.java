@@ -7,5 +7,5 @@ import lombok.Data;
 @Data
 public class Group {
 	private String groupName;
-	private List<String> hostAndPorts;
+	private List<Node> nodes;
 }

@@ -3,7 +3,10 @@ package com.behase.remin.service;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
+import com.behase.remin.model.Node;
+import com.google.common.base.Joiner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
@@ -75,6 +78,15 @@ public class NotifyServiceImpl implements NotifyService {
 				}
 				text.append(String.format("%s", lineSeparator));
 
+				if (notice.isNotifyWhenDisconnected()) {
+					List<String> disconnectedHostAndPorts = group.getNodes().stream().filter(node -> !node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
+					if (!disconnectedHostAndPorts.isEmpty()) {
+						text.append(String.format("There are disconnected hostAndPorts.%s", lineSeparator));
+						text.append(String.format("%s%s", Joiner.on(", ").join(disconnectedHostAndPorts), lineSeparator));
+						text.append(String.format("%s", lineSeparator));
+					}
+				}
+
 				int i = 0;
 				for (NoticeJob job : jobs) {
 					i++;
@@ -109,7 +121,14 @@ public class NotifyServiceImpl implements NotifyService {
 			private void notifyByHttp(final Group group, final Notice notice, final List<NoticeJob> jobs)
 					throws Exception {
 				String data = mapper.writeValueAsString(jobs);
-				Request.Post(notice.getHttp().getUrl()).connectTimeout(3000).socketTimeout(3000).bodyForm(Form.form().add("groupName", group.getGroupName()).add("data", data).build()).execute();
+
+				Form form = Form.form().add("groupName", group.getGroupName()).add("data", data);
+				if (notice.isNotifyWhenDisconnected()) {
+					List<String> disconnectedHostAndPorts = group.getNodes().stream().filter(node -> !node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
+					form.add("disconnectedHostAndPorts", Joiner.on(",").join(disconnectedHostAndPorts));
+				}
+
+				Request.Post(notice.getHttp().getUrl()).connectTimeout(3000).socketTimeout(3000).bodyForm(form.build()).execute();
 			}
 		});
 	}

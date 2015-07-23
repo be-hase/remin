@@ -10,7 +10,7 @@
 			<Pattern>%date %t %X{req.remoteAddr} %-5level %logger{20}[%file:%method:%line] - %msg%n</Pattern>
 		</encoder>
 	</appender>
-	
+
 	<appender name="logging_operation" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>${log.dir:-logs}/relumin_operation.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
@@ -21,14 +21,14 @@
 			<Pattern>%date %t %X{req.remoteAddr} %-5level %logger{20}[%file:%method:%line] - %msg%n</Pattern>
 		</encoder>
 	</appender>
-	
-	<logger name="com.behase.relumin" level="${log.level:-INFO}" />
-	
+
+	<logger name="com.behase.relumin" level="${log.level:-INFO}"/>
+
 	<logger name="logging_operation" level="INFO">
-		<appender-ref ref="logging_operation" />
+		<appender-ref ref="logging_operation"/>
 	</logger>
-	
+
 	<root level="WARN">
-		<appender-ref ref="FileAppender" />
+		<appender-ref ref="FileAppender"/>
 	</root>
 </included>

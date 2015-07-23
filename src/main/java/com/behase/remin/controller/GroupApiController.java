@@ -107,7 +107,7 @@ public class GroupApiController {
 	@RequestMapping(value = "/group/{groupName}/metrics", method = {RequestMethod.GET, RequestMethod.POST})
 	public Object getMetrics(
 			@PathVariable String groupName,
-			@RequestParam(defaultValue = "") String nodes,
+			@RequestParam(defaultValue = "") String hostAndPorts,
 			@RequestParam(defaultValue = "") String fields,
 			@RequestParam(defaultValue = "") String start,
 			@RequestParam(defaultValue = "") String end
@@ -125,11 +125,11 @@ public class GroupApiController {
 			throw new InvalidParameterException("'end' is must be number.");
 		}
 
-		List<String> nodesList = Lists.newArrayList();
-		if (StringUtils.isNotBlank(nodes)) {
-			nodesList.addAll(Splitter.on(",").splitToList(nodes));
+		List<String> hostAndPortList = Lists.newArrayList();
+		if (StringUtils.isNotBlank(hostAndPorts)) {
+			hostAndPortList.addAll(Splitter.on(",").splitToList(hostAndPorts));
 		}
-		if (nodesList.isEmpty()) {
+		if (hostAndPortList.isEmpty()) {
 			throw new InvalidParameterException("'nodes' is empty.");
 		}
 
@@ -141,7 +141,7 @@ public class GroupApiController {
 			throw new InvalidParameterException("'fields' is empty.");
 		}
 
-		return groupService.getGroupStaticsInfoHistory(groupName, nodesList, fieldsList, startLong, endLong);
+		return groupService.getGroupStaticsInfoHistory(groupName, hostAndPortList, fieldsList, startLong, endLong);
 	}
 
 	@RequestMapping(value = "/group/{groupName}/notice", method = RequestMethod.GET)

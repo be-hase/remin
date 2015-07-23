@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,7 +17,9 @@ import redis.clients.jedis.JedisPool;
 import com.behase.remin.Constants;
 import com.behase.remin.exception.InvalidParameterException;
 import com.behase.remin.model.Group;
+import com.behase.remin.model.Node;
 import com.behase.remin.model.Notice;
+import com.behase.remin.util.JedisUtils;
 import com.behase.remin.util.ValidationUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,13 +51,46 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
-	public Group getGroup(String groupName) throws IOException {
+	public Group getGroup(String groupName) {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+			if (hostAndPorts.isEmpty()) {
+				throw new InvalidParameterException(String.format("%s does not exists.", groupName));
+			}
+
+			List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
+				Node node = new Node();
+				node.setHostAndPort(hostAndPort);
+				try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+					jedis.ping();
+					node.setConnected(true);
+				} catch (Exception e) {
+					node.setConnected(false);
+				}
+				return node;
+			}).collect(Collectors.toList());
 
 			Group group = new Group();
 			group.setGroupName(groupName);
-			group.setHostAndPorts(hostAndPorts);
+			group.setNodes(nodes);
+			return group;
+		}
+	}
+
+	@Override
+	public Group getGroupWithNoCheckConnection(String groupName) {
+		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
+			List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+
+			List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
+				Node node = new Node();
+				node.setHostAndPort(hostAndPort);
+				return node;
+			}).collect(Collectors.toList());
+
+			Group group = new Group();
+			group.setGroupName(groupName);
+			group.setNodes(nodes);
 			return group;
 		}
 	}
@@ -68,7 +104,7 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
-	public void setGroup(String groupName, List<String> hostAndPorts) throws JsonProcessingException {
+	public void setGroup(String groupName, List<String> hostAndPorts) {
 		ValidationUtils.groupName(groupName);
 		Set<String> hostAndPortsSet = Sets.newTreeSet(hostAndPorts);
 
