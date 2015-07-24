@@ -19,14 +19,14 @@ public class Role implements GrantedAuthority {
 	}
 
 	public static final Role VIEWER = new Role("VIEWER");
-	public static final Role RELUMIN_ADMIN = new Role("RELUMIN_ADMIN");
+	public static final Role REMIN_ADMIN = new Role("REMIN_ADMIN");
 
 	public static Role get(String role) {
 		switch (role) {
 			case "VIEWER":
 				return VIEWER;
-			case "RELUMIN_ADMIN":
-				return RELUMIN_ADMIN;
+			case "REMIN_ADMIN":
+				return REMIN_ADMIN;
 			default:
 		}
 		throw new InvalidParameterException(String.format("'%s' is invalid role.", role));

@@ -13,11 +13,13 @@ public interface GroupService {
 
 	Group getGroup(String groupName);
 
-	Group getGroupWithNoCheckConnection(String groupName);
-
 	boolean existsGroupName(String groupName);
 
 	void setGroup(String groupName, List<String> hostAndPorts);
+
+	void addGroupNodes(String groupName, List<String> hostAndPorts);
+
+	void deleteGroupNode(String groupName, String hostAndPort);
 
 	Notice getGroupNotice(String groupName) throws IOException;
 

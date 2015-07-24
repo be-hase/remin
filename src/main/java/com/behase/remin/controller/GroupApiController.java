@@ -90,6 +90,30 @@ public class GroupApiController {
 		return groupService.getGroup(groupName);
 	}
 
+	@RequestMapping(value = "/group/{groupName}/add-nodes", method = RequestMethod.POST)
+	public Group addGroupNodes(
+			Authentication authentication,
+			@PathVariable String groupName,
+			@RequestParam String hostAndPorts
+	) throws IOException {
+		loggingOperationService.log("addGroupNodes", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPorts);
+
+		groupService.addGroupNodes(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))));
+		return groupService.getGroup(groupName);
+	}
+
+	@RequestMapping(value = "/group/{groupName}/{hostAndPort}/delete", method = RequestMethod.POST)
+	public Group deleteGroupNode(
+			Authentication authentication,
+			@PathVariable String groupName,
+			@PathVariable String hostAndPort
+	) throws IOException {
+		loggingOperationService.log("deleteGroupNode", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPort);
+
+		groupService.deleteGroupNode(groupName, hostAndPort);
+		return groupService.getGroup(groupName);
+	}
+
 	@RequestMapping(value = "/group/{groupName}/delete", method = RequestMethod.POST)
 	public Map<String, Boolean> deleteGroupByPost(
 			Authentication authentication,
@@ -130,7 +154,7 @@ public class GroupApiController {
 			hostAndPortList.addAll(Splitter.on(",").splitToList(hostAndPorts));
 		}
 		if (hostAndPortList.isEmpty()) {
-			throw new InvalidParameterException("'nodes' is empty.");
+			throw new InvalidParameterException("'hostAndPorts' is empty.");
 		}
 
 		List<String> fieldsList = Lists.newArrayList();

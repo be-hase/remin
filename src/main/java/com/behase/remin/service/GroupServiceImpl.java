@@ -78,24 +78,6 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
-	public Group getGroupWithNoCheckConnection(String groupName) {
-		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
-			List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
-
-			List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
-				Node node = new Node();
-				node.setHostAndPort(hostAndPort);
-				return node;
-			}).collect(Collectors.toList());
-
-			Group group = new Group();
-			group.setGroupName(groupName);
-			group.setNodes(nodes);
-			return group;
-		}
-	}
-
-	@Override
 	public boolean existsGroupName(String groupName) {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			Set<String> groupNames = dataStoreJedis.smembers(Constants.getGroupsRedisKey(redisPrefixKey));
@@ -108,10 +90,63 @@ public class GroupServiceImpl implements GroupService {
 		ValidationUtils.groupName(groupName);
 		Set<String> hostAndPortsSet = Sets.newTreeSet(hostAndPorts);
 
+		hostAndPortsSet.forEach(hostAndPort -> {
+			try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+				jedis.ping();
+			} catch (Exception e) {
+				throw new InvalidParameterException(String.format("Cannot connect to %s", hostAndPort));
+			}
+		});
+
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			dataStoreJedis.sadd(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
 			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
-			dataStoreJedis.lpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPorts.size()]));
+			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+		}
+	}
+
+	@Override
+	public void addGroupNodes(String groupName, List<String> hostAndPorts) {
+		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
+			if (!existsGroupName(groupName)) {
+				throw new InvalidParameterException(String.format("Not exists groupName. (%s)", groupName));
+			}
+			List<String> existsHostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+
+			hostAndPorts.forEach(hostAndPort -> {
+				try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+					jedis.ping();
+				} catch (Exception e) {
+					throw new InvalidParameterException(String.format("Cannot connect to %s", hostAndPort));
+				}
+			});
+
+			existsHostAndPorts.addAll(hostAndPorts);
+			Set<String> hostAndPortsSet = Sets.newTreeSet(existsHostAndPorts);
+
+			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+		}
+	}
+
+	@Override
+	public void deleteGroupNode(String groupName, String hostAndPort) {
+		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
+			if (!existsGroupName(groupName)) {
+				throw new InvalidParameterException(String.format("Not exists groupName. (%s)", groupName));
+			}
+
+			List<String> existsHostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+			if (existsHostAndPorts.size() == 1) {
+				throw new InvalidParameterException(String.format("This is last node. So you cannot delete this node."));
+			}
+
+			existsHostAndPorts.removeIf(v -> StringUtils.equals(v, hostAndPort));
+			Set<String> hostAndPortsSet = Sets.newTreeSet(existsHostAndPorts);
+
+			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+			dataStoreJedis.del(Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, hostAndPort));
 		}
 	}
 
@@ -166,5 +201,22 @@ public class GroupServiceImpl implements GroupService {
 		}
 
 		return result;
+	}
+
+	Group getGroupWithNoCheckConnection(String groupName) {
+		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
+			List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+
+			List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
+				Node node = new Node();
+				node.setHostAndPort(hostAndPort);
+				return node;
+			}).collect(Collectors.toList());
+
+			Group group = new Group();
+			group.setGroupName(groupName);
+			group.setNodes(nodes);
+			return group;
+		}
 	}
 }

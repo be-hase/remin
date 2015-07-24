@@ -110,7 +110,7 @@ public class NotifyServiceImpl implements NotifyService {
 					: noticeMailFrom;
 				SimpleMailMessage message = new SimpleMailMessage();
 				message.setFrom(StringUtils.trim(from));
-				message.setTo(Splitter.on(",").splitToList(notice.getMail().getTo()).stream().map(v -> StringUtils.trim(v)).toArray(size -> new String[size]));
+				message.setTo(Splitter.on(",").trimResults().splitToList(notice.getMail().getTo()).stream().map(v -> StringUtils.trim(v)).toArray(size -> new String[size]));
 				message.setSubject(String.format("[Remin] Notification of \"%s\". Please check.", group.getGroupName()));
 				message.setText(text.toString());
 

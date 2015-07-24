@@ -155,7 +155,6 @@ public class NodeScheduler {
 		boolean notNotifyByMail = StringUtils.isBlank(noticeMailHost) || noticeMailPort == 0
 			|| StringUtils.isBlank(from);
 		boolean notNotifyByHttp = StringUtils.isBlank(notice.getHttp().getUrl());
-		log.debug("{} {}", notNotifyByMail, notNotifyByHttp);
 		if (notNotifyByMail && notNotifyByHttp) {
 			if (notice.getItems().size() > 0) {
 				log.warn("You set notification threshold, But mail or http is not set.");
