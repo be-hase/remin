@@ -12,7 +12,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import com.google.common.net.HostAndPort;
 import org.apache.commons.lang3.StringUtils;
 import org.fluentd.logger.FluentLogger;
 import org.springframework.beans.factory.annotation.Autowired;

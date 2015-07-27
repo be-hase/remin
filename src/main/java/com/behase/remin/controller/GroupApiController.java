@@ -95,7 +95,7 @@ public class GroupApiController {
 			Authentication authentication,
 			@PathVariable String groupName,
 			@RequestParam String hostAndPorts
-	) throws IOException {
+			) throws IOException {
 		loggingOperationService.log("addGroupNodes", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPorts);
 
 		groupService.addGroupNodes(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))));
@@ -107,7 +107,7 @@ public class GroupApiController {
 			Authentication authentication,
 			@PathVariable String groupName,
 			@PathVariable String hostAndPort
-	) throws IOException {
+			) throws IOException {
 		loggingOperationService.log("deleteGroupNode", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPort);
 
 		groupService.deleteGroupNode(groupName, hostAndPort);

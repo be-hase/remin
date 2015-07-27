@@ -5,8 +5,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import com.behase.remin.model.Node;
-import com.google.common.base.Joiner;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.fluent.Form;
 import org.apache.http.client.fluent.Request;
@@ -17,10 +15,12 @@ import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 
 import com.behase.remin.model.Group;
+import com.behase.remin.model.Node;
 import com.behase.remin.model.Notice;
 import com.behase.remin.model.NoticeItem;
 import com.behase.remin.model.NoticeJob;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 
 import lombok.extern.slf4j.Slf4j;

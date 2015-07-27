@@ -21,7 +21,6 @@ import com.behase.remin.model.Node;
 import com.behase.remin.model.Notice;
 import com.behase.remin.util.JedisUtils;
 import com.behase.remin.util.ValidationUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
