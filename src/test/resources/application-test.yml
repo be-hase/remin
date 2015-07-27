@@ -6,7 +6,8 @@ management:
   port: 0
 
 #### REMIN SETTING ###
-host:
+remin:
+  host:
 
 redis:
   prefixKey: _remin
@@ -35,7 +36,7 @@ outputMetrics:
   fluentd:
     enabled: false
     host:
-    port:
+    port: 0
     timeout: 3000
     bufferCapacity: 1048576
     tag: remin
