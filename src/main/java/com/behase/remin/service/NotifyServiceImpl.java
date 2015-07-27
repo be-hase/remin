@@ -28,8 +28,8 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 @Service
 public class NotifyServiceImpl implements NotifyService {
-	@Value("${relumin.host}")
-	private String reluminHost;
+	@Value("${remin.host}")
+	private String reminHost;
 
 	@Value("${server.port}")
 	private String serverPort;
@@ -73,8 +73,8 @@ public class NotifyServiceImpl implements NotifyService {
 
 				StringBuilder text = new StringBuilder();
 				text.append(String.format("Group name : %s%s", group.getGroupName(), lineSeparator));
-				if (StringUtils.isNotBlank(reluminHost)) {
-					text.append(String.format("Check this page : http://%s:%s/#/group/%s%s", reluminHost, serverPort, group.getGroupName(), lineSeparator));
+				if (StringUtils.isNotBlank(reminHost)) {
+					text.append(String.format("Check this page : http://%s:%s/#/group/%s%s", reminHost, serverPort, group.getGroupName(), lineSeparator));
 				}
 				text.append(String.format("%s", lineSeparator));
 

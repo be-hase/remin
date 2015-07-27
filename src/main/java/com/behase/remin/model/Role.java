@@ -32,3 +32,4 @@ public class Role implements GrantedAuthority {
 		throw new InvalidParameterException(String.format("'%s' is invalid role.", role));
 	}
 }
+

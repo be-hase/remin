@@ -4,6 +4,7 @@ import static org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppC
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Before;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -73,5 +74,10 @@ public class ApiTest {
 			} catch (Exception e) {
 			}
 		}
+	}
+
+	@Test
+	public void test() {
+
 	}
 }

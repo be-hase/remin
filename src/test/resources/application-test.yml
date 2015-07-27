@@ -5,20 +5,41 @@ server:
 management:
   port: 0
 
-#### RELUMIN SETTING ###
+#### REMIN SETTING ###
+host:
+
 redis:
   prefixKey: _remin
   host: 192.168.33.11
   port: 6000
 
+auth:
+  enabled: false
+  allowAnonymous: true
+
+notice:
+  mail:
+    host: alpha-smtp.linegame.jp
+    port: 25
+    from: ryosuke.hasebe@linecorp.com
+    user:
+    password:
+    charset: utf-8
+
 scheduler:
-  refreshClustersIntervalMillis:0
-  collectStaticsInfoIntervalMillis:0
-  collectStaticsInfoMaxCount:10
+  refreshClustersIntervalMillis: 0
+  collectStaticsInfoIntervalMillis: 0
+  collectStaticsInfoMaxCount: 10
 
 outputMetrics:
   fluentd:
     enabled: false
+    host:
+    port:
+    timeout: 3000
+    bufferCapacity: 1048576
+    tag: remin
+    nodeTag: node
 
 # TEST PROPERTIES
 test:

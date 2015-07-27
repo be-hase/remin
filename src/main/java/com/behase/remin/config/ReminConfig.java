@@ -46,9 +46,9 @@ public class ReminConfig {
 
 		Properties prop = new Properties();
 
-		//relumin
+		//remin
 		prop.setProperty(
-			"relumin.host",
+			"remin.host",
 			StringUtils.defaultString(host));
 
 		// auth

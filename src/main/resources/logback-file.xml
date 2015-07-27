@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <included>
 	<appender name="FileAppender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${log.dir:-logs}/relumin.log</file>
+		<file>${log.dir:-logs}/remin.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>${log.dir:-logs}/relumin.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<fileNamePattern>${log.dir:-logs}/remin.%d{yyyy-MM-dd}.log</fileNamePattern>
 			<maxHistory>${log.history:-30}</maxHistory>
 		</rollingPolicy>
 		<encoder>
@@ -12,9 +12,9 @@
 	</appender>
 
 	<appender name="logging_operation" class="ch.qos.logback.core.rolling.RollingFileAppender">
-		<file>${log.dir:-logs}/relumin_operation.log</file>
+		<file>${log.dir:-logs}/remin_operation.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<fileNamePattern>${log.dir:-logs}/relumin_operation.%d{yyyy-MM-dd}.log</fileNamePattern>
+			<fileNamePattern>${log.dir:-logs}/remin_operation.%d{yyyy-MM-dd}.log</fileNamePattern>
 			<maxHistory>${log.history:-30}</maxHistory>
 		</rollingPolicy>
 		<encoder>
@@ -22,7 +22,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="com.behase.relumin" level="${log.level:-INFO}"/>
+	<logger name="com.behase.remin" level="${log.level:-INFO}"/>
 
 	<logger name="logging_operation" level="INFO">
 		<appender-ref ref="logging_operation"/>
