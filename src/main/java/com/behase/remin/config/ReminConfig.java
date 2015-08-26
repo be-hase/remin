@@ -87,6 +87,11 @@ public class ReminConfig {
 		prop.setProperty(
 			"redis.port",
 			redis.getPort());
+		prop.setProperty(
+				"redis.password",
+				StringUtils.defaultIfBlank(
+						redis.getPassword(),
+						RedisConfig.DEFAULT_PASSWORD));
 
 		// scheduler
 		prop.setProperty(

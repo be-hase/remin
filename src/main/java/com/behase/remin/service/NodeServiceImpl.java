@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -39,8 +40,11 @@ public class NodeServiceImpl implements NodeService {
 	private String redisPrefixKey;
 
 	@Override
-	public Map<String, String> getStaticsInfo(String hostAndPort) {
+	public Map<String, String> getStaticsInfo(String hostAndPort, String password) {
 		try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+			if (StringUtils.isNotBlank(password)) {
+				jedis.auth(password);
+			}
 			Map<String, String> result = JedisUtils.parseInfoResult(jedis.info());
 			return result;
 		}

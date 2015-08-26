@@ -7,19 +7,23 @@ import java.util.Set;
 
 import com.behase.remin.model.Group;
 import com.behase.remin.model.Notice;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 public interface GroupService {
 	Set<String> getGroups();
 
-	Group getGroup(String groupName);
+	Group getGroup(String groupName) throws IOException;
+
+	Group getGroupWithHiddenPassword(String groupName) throws IOException;
 
 	boolean existsGroupName(String groupName);
 
-	void setGroup(String groupName, List<String> hostAndPorts);
+	void setGroup(String groupName, List<String> hostAndPorts, String password) throws JsonProcessingException;
 
-	void addGroupNodes(String groupName, List<String> hostAndPorts);
+	void addGroupNodes(String groupName, List<String> hostAndPorts, String password) throws IOException;
 
-	void deleteGroupNode(String groupName, String hostAndPort);
+	void deleteGroupNode(String groupName, String hostAndPort) throws IOException;
 
 	Notice getGroupNotice(String groupName) throws IOException;
 

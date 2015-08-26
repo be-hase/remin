@@ -47,6 +47,7 @@ public class GroupApiController {
 
 	@RequestMapping(value = "/groups", method = RequestMethod.GET)
 	public Object getGroupList(
+			Authentication authentication,
 			@RequestParam(defaultValue = "") String full
 			) {
 		Set<String> groupNamesSet = groupService.getGroups();
@@ -57,7 +58,7 @@ public class GroupApiController {
 			List<Group> groups = Lists.newArrayList();
 			groupNames.forEach(groupName -> {
 				try {
-					groups.add(groupService.getGroup(groupName));
+					groups.add(groupService.getGroupWithHiddenPassword(groupName));
 				} catch (Exception e) {
 					log.error("Failed to get group. groupName = {}", groupName, e);
 				}
@@ -70,36 +71,39 @@ public class GroupApiController {
 
 	@RequestMapping(value = "/group/{groupName}", method = RequestMethod.GET)
 	public Group getGroup(
+			Authentication authentication,
 			@PathVariable String groupName
-			) throws IOException {
-		return groupService.getGroup(groupName);
+			) throws Exception {
+		return groupService.getGroupWithHiddenPassword(groupName);
 	}
 
 	@RequestMapping(value = "/group/{groupName}", method = RequestMethod.POST)
 	public Group setGroup(
 			Authentication authentication,
 			@PathVariable String groupName,
-			@RequestParam String hostAndPorts
-			) throws IOException {
-		loggingOperationService.log("updateGroup", authentication, "groupName={}, hostAndPorts={}.", groupName, hostAndPorts);
+			@RequestParam String hostAndPorts,
+			@RequestParam String password
+			) throws Exception {
+		loggingOperationService.log("updateGroup", authentication, "groupName={}, hostAndPorts={}, password={}.", groupName, hostAndPorts, password);
 
 		if (groupService.existsGroupName(groupName)) {
 			throw new InvalidParameterException(String.format("This groupName(%s) already exists.", groupName));
 		}
-		groupService.setGroup(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))));
-		return groupService.getGroup(groupName);
+		groupService.setGroup(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))), password);
+		return groupService.getGroupWithHiddenPassword(groupName);
 	}
 
 	@RequestMapping(value = "/group/{groupName}/add-nodes", method = RequestMethod.POST)
 	public Group addGroupNodes(
 			Authentication authentication,
 			@PathVariable String groupName,
-			@RequestParam String hostAndPorts
-			) throws IOException {
+			@RequestParam String hostAndPorts,
+			@RequestParam String password
+			) throws Exception {
 		loggingOperationService.log("addGroupNodes", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPorts);
 
-		groupService.addGroupNodes(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))));
-		return groupService.getGroup(groupName);
+		groupService.addGroupNodes(groupName, Lists.newArrayList(JedisUtils.getHostAndPorts(Splitter.on(",").trimResults().splitToList(hostAndPorts))), password);
+		return groupService.getGroupWithHiddenPassword(groupName);
 	}
 
 	@RequestMapping(value = "/group/{groupName}/{hostAndPort}/delete", method = RequestMethod.POST)
@@ -107,11 +111,11 @@ public class GroupApiController {
 			Authentication authentication,
 			@PathVariable String groupName,
 			@PathVariable String hostAndPort
-			) throws IOException {
+			) throws Exception {
 		loggingOperationService.log("deleteGroupNode", authentication, "groupName={}, hostAndPort={}.", groupName, hostAndPort);
 
 		groupService.deleteGroupNode(groupName, hostAndPort);
-		return groupService.getGroup(groupName);
+		return groupService.getGroupWithHiddenPassword(groupName);
 	}
 
 	@RequestMapping(value = "/group/{groupName}/delete", method = RequestMethod.POST)

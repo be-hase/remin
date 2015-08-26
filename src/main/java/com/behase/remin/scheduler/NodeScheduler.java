@@ -89,22 +89,22 @@ public class NodeScheduler {
 			try {
 				Notice notice = groupService.getGroupNotice(groupName);
 				Group group = groupService.getGroup(groupName);
-				List<String> hostAndPorts = group.getNodes().stream().filter(node -> node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
+				List<Node> nodes = group.getNodes().stream().filter(node -> node.isConnected()).collect(Collectors.toList());
 				Map<String, Map<String, String>> staticsInfos = Maps.newLinkedHashMap();
 
-				for (String hostAndPort : hostAndPorts) {
+				for (Node node : nodes) {
 					try {
-						log.info("collectStaticsInfo groupName={}, hostAndPort={}", groupName, hostAndPort);
-						Map<String, String> staticsInfo = nodeService.getStaticsInfo(hostAndPort);
-						staticsInfos.put(hostAndPort, staticsInfo);
+						log.info("collectStaticsInfo groupName={}, hostAndPort={}", groupName, node.getHostAndPort());
+						Map<String, String> staticsInfo = nodeService.getStaticsInfo(node.getHostAndPort(), node.getPassword());
+						staticsInfos.put(node.getHostAndPort(), staticsInfo);
 
 						try (Jedis jedis = datastoreJedisPool.getResource()) {
-							String key = Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, hostAndPort);
+							String key = Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, node.getHostAndPort());
 							jedis.lpush(key, mapper.writeValueAsString(staticsInfo));
 							jedis.ltrim(key, 0, collectStaticsInfoMaxCount - 1);
 						}
 					} catch (Exception e) {
-						log.error("collectStaticsIndo fail. groupName={}, hostAndPort={}", groupName, hostAndPort, e);
+						log.error("collectStaticsIndo fail. groupName={}, hostAndPort={}", groupName, node.getHostAndPort(), e);
 					}
 				}
 
