@@ -5,7 +5,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
+import com.fasterxml.jackson.core.JsonParseException;
+import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -19,8 +22,11 @@ import com.behase.remin.exception.InvalidParameterException;
 import com.behase.remin.model.Group;
 import com.behase.remin.model.Node;
 import com.behase.remin.model.Notice;
+import com.behase.remin.model.StoreNode;
 import com.behase.remin.util.JedisUtils;
 import com.behase.remin.util.ValidationUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -50,20 +56,27 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
-	public Group getGroup(String groupName) {
+	public Group getGroup(String groupName) throws IOException {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
-			List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
-			if (hostAndPorts.isEmpty()) {
+			String storeNodesJson = dataStoreJedis.get(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			List<StoreNode> storeNodes = mapper.readValue(storeNodesJson, new TypeReference<List<StoreNode>>() {
+			});
+			if (storeNodes.isEmpty()) {
 				throw new InvalidParameterException(String.format("%s does not exists.", groupName));
 			}
 
-			List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
+			List<Node> nodes = storeNodes.stream().map(storeNode -> {
 				Node node = new Node();
-				node.setHostAndPort(hostAndPort);
-				try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+				node.setHostAndPort(storeNode.getHostAndPort());
+				node.setPassword(StringUtils.defaultIfBlank(storeNode.getPassword(), ""));
+				try (Jedis jedis = JedisUtils.getJedisByHostAndPort(storeNode.getHostAndPort())) {
+					if (StringUtils.isNotBlank(storeNode.getPassword())) {
+						jedis.auth(storeNode.getPassword());
+					}
 					jedis.ping();
 					node.setConnected(true);
 				} catch (Exception e) {
+					log.error(String.format("Cannot connect to %s", storeNode.getHostAndPort()), e);
 					node.setConnected(false);
 				}
 				return node;
@@ -77,6 +90,23 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
+	public Group getGroupWithHiddenPassword(String groupName) throws IOException {
+		Group group = getGroup(groupName);
+		List<Node> nodes = Lists.newArrayList(group.getNodes());
+		nodes.forEach(node -> {
+			if (StringUtils.isNotBlank(node.getPassword())) {
+				StringBuilder builder = new StringBuilder();
+				IntStream.range(0, node.getPassword().length()).forEach(v -> {
+					builder.append("x");
+				});
+				node.setPassword(builder.toString());
+			}
+		});
+		group.setNodes(nodes);
+		return group;
+	}
+
+	@Override
 	public boolean existsGroupName(String groupName) {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			Set<String> groupNames = dataStoreJedis.smembers(Constants.getGroupsRedisKey(redisPrefixKey));
@@ -85,66 +115,92 @@ public class GroupServiceImpl implements GroupService {
 	}
 
 	@Override
-	public void setGroup(String groupName, List<String> hostAndPorts) {
+	public void setGroup(String groupName, List<String> hostAndPorts, String password) throws JsonProcessingException {
 		ValidationUtils.groupName(groupName);
 		Set<String> hostAndPortsSet = Sets.newTreeSet(hostAndPorts);
 
 		hostAndPortsSet.forEach(hostAndPort -> {
 			try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+				if (StringUtils.isNotBlank(password)) {
+					jedis.auth(password);
+				}
 				jedis.ping();
 			} catch (Exception e) {
+				log.error(String.format("Cannot connect to %s", hostAndPort), e);
 				throw new InvalidParameterException(String.format("Cannot connect to %s", hostAndPort));
 			}
 		});
 
+		List<StoreNode> storeNodes = hostAndPorts.stream().map(v -> {
+			StoreNode storeNode = new StoreNode();
+			storeNode.setHostAndPort(v);
+			storeNode.setPassword(StringUtils.defaultIfBlank(password, ""));
+			return storeNode;
+		}).collect(Collectors.toList());
+
+		storeNodes.sort((v1, v2) -> v1.getHostAndPort().compareTo(v2.getHostAndPort()));
+
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			dataStoreJedis.sadd(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
-			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
-			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+			dataStoreJedis.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(storeNodes));
 		}
 	}
 
 	@Override
-	public void addGroupNodes(String groupName, List<String> hostAndPorts) {
+	public void addGroupNodes(String groupName, List<String> hostAndPorts, String password) throws IOException {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			if (!existsGroupName(groupName)) {
 				throw new InvalidParameterException(String.format("Not exists groupName. (%s)", groupName));
 			}
-			List<String> existsHostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+
+			String existStoreNodesJson = dataStoreJedis.get(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			List<StoreNode> existStoreNodes = mapper.readValue(existStoreNodesJson, new TypeReference<List<StoreNode>>() {
+			});
 
 			hostAndPorts.forEach(hostAndPort -> {
-				try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
-					jedis.ping();
-				} catch (Exception e) {
-					throw new InvalidParameterException(String.format("Cannot connect to %s", hostAndPort));
+				boolean alreadyExists = existStoreNodes.stream().filter(existStoreNode -> StringUtils.equals(existStoreNode.getHostAndPort(), hostAndPort)).findAny().isPresent();
+
+				if (!alreadyExists) {
+					try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+						if (StringUtils.isNotBlank(password)) {
+							jedis.auth(password);
+						}
+						jedis.ping();
+
+						StoreNode storeNode = new StoreNode();
+						storeNode.setHostAndPort(hostAndPort);
+						storeNode.setPassword(StringUtils.defaultIfBlank(password, ""));
+						existStoreNodes.add(storeNode);
+					} catch (Exception e) {
+						log.error(String.format("Cannot connect to %s", hostAndPort), e);
+						throw new InvalidParameterException(String.format("Cannot connect to %s", hostAndPort));
+					}
 				}
 			});
 
-			existsHostAndPorts.addAll(hostAndPorts);
-			Set<String> hostAndPortsSet = Sets.newTreeSet(existsHostAndPorts);
+			existStoreNodes.sort((v1, v2) -> v1.getHostAndPort().compareTo(v2.getHostAndPort()));
 
-			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
-			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+			dataStoreJedis.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(existStoreNodes));
 		}
 	}
 
 	@Override
-	public void deleteGroupNode(String groupName, String hostAndPort) {
+	public void deleteGroupNode(String groupName, String hostAndPort) throws IOException {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			if (!existsGroupName(groupName)) {
 				throw new InvalidParameterException(String.format("Not exists groupName. (%s)", groupName));
 			}
 
-			List<String> existsHostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
-			if (existsHostAndPorts.size() == 1) {
+			String existStoreNodesJson = dataStoreJedis.get(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			List<StoreNode> existStoreNodes = mapper.readValue(existStoreNodesJson, new TypeReference<List<StoreNode>>() {
+			});
+			if (existStoreNodes.size() == 1) {
 				throw new InvalidParameterException(String.format("This is last node. So you cannot delete this node."));
 			}
 
-			existsHostAndPorts.removeIf(v -> StringUtils.equals(v, hostAndPort));
-			Set<String> hostAndPortsSet = Sets.newTreeSet(existsHostAndPorts);
+			existStoreNodes.removeIf(v -> StringUtils.equals(v.getHostAndPort(), hostAndPort));
 
-			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
-			dataStoreJedis.rpush(Constants.getGroupRedisKey(redisPrefixKey, groupName), hostAndPortsSet.toArray(new String[hostAndPortsSet.size()]));
+			dataStoreJedis.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(existStoreNodes));
 			dataStoreJedis.del(Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, hostAndPort));
 		}
 	}

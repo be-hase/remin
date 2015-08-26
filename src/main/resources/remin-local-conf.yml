@@ -11,6 +11,7 @@ server:
 redis:
   host: 192.168.33.11
   port: 6000
+  password:
 
 notice:
   mail:

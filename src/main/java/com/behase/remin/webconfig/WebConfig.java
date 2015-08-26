@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
+import redis.clients.jedis.Protocol;
 
 @Configuration
 public class WebConfig extends WebMvcConfigurerAdapter {
@@ -43,6 +44,9 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 
 	@Value("${redis.port}")
 	private int redisPort;
+
+	@Value("${redis.password}")
+	private String redisPassword;
 
 	@Value("${notice.mail.host}")
 	private String noticeMailHost;
@@ -118,7 +122,12 @@ public class WebConfig extends WebMvcConfigurerAdapter {
 		config.setMaxWaitMillis(3000L);
 		config.setTestOnBorrow(true);
 
-		JedisPool pool = new JedisPool(config, redisHost, redisPort);
+		JedisPool pool;
+		if (StringUtils.isBlank(redisPassword)) {
+			pool = new JedisPool(config, redisHost, redisPort, Protocol.DEFAULT_TIMEOUT);
+		} else {
+			pool = new JedisPool(config, redisHost, redisPort, Protocol.DEFAULT_TIMEOUT, redisPassword);
+		}
 
 		return pool;
 	}
