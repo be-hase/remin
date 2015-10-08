@@ -11,7 +11,7 @@ var ValidationRender = require('../mixins/ValidationRender');
 var RegisterGroupModal = React.createClass({
     mixins: [ValidationMixin, ValidationRender, React.addons.LinkedStateMixin],
     validatorTypes: {
-        groupName: Joi.string().max(20).regex(/^[a-zA-Z0-9_-]+$/).trim().required().label('Group name'),
+        groupName: Joi.string().max(50).regex(/^[a-zA-Z0-9_-]+$/).trim().required().label('Group name'),
         hostAndPorts: Joi.string().trim().required().label('Host and ports'),
         password: Joi.string().allow('').trim().label('Password')
     },

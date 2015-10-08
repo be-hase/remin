@@ -21,6 +21,8 @@ public interface GroupService {
 
 	void setGroup(String groupName, List<String> hostAndPorts, String password) throws JsonProcessingException;
 
+	void changeGroupName(String groupName, String newGroupName) throws IOException;
+
 	void addGroupNodes(String groupName, List<String> hostAndPorts, String password) throws IOException;
 
 	void deleteGroupNode(String groupName, String hostAndPort) throws IOException;

@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import com.behase.remin.exception.ApiException;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.google.common.collect.Lists;
 import org.apache.commons.lang3.StringUtils;
@@ -32,6 +33,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import lombok.extern.slf4j.Slf4j;
+import redis.clients.jedis.Pipeline;
 
 @Slf4j
 @Service
@@ -141,8 +143,34 @@ public class GroupServiceImpl implements GroupService {
 		storeNodes.sort((v1, v2) -> v1.getHostAndPort().compareTo(v2.getHostAndPort()));
 
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
-			dataStoreJedis.sadd(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
-			dataStoreJedis.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(storeNodes));
+			Pipeline p = dataStoreJedis.pipelined();
+			p.sadd(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
+			p.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(storeNodes));
+			p.sync();
+		}
+	}
+
+	@Override
+	public void changeGroupName(String groupName, String newGroupName) throws IOException {
+		ValidationUtils.groupName(newGroupName);
+		if (!existsGroupName(groupName)) {
+			throw new InvalidParameterException(String.format("Group name(%s) does not exists. Please confirm.", groupName));
+		}
+		if (existsGroupName(newGroupName)) {
+			throw new InvalidParameterException(String.format("New group name(%s) already exists. Please confirm.", newGroupName));
+		}
+
+		String groupPrefixKey = Constants.getGroupRedisKey(redisPrefixKey, groupName);
+		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
+			Set<String> currentKeys = dataStoreJedis.keys(groupPrefixKey + "*");
+			Pipeline p = dataStoreJedis.pipelined();
+			currentKeys.forEach(currentKey -> {
+				String newKey = Constants.getGroupRedisKey(redisPrefixKey, newGroupName) + StringUtils.removeStart(currentKey, groupPrefixKey);
+				p.rename(currentKey, newKey);
+			});
+			p.sadd(Constants.getGroupsRedisKey(redisPrefixKey), newGroupName);
+			p.srem(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
+			p.sync();
 		}
 	}
 
@@ -200,8 +228,10 @@ public class GroupServiceImpl implements GroupService {
 
 			existStoreNodes.removeIf(v -> StringUtils.equals(v.getHostAndPort(), hostAndPort));
 
-			dataStoreJedis.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(existStoreNodes));
-			dataStoreJedis.del(Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, hostAndPort));
+			Pipeline p = dataStoreJedis.pipelined();
+			p.set(Constants.getGroupRedisKey(redisPrefixKey, groupName), mapper.writeValueAsString(existStoreNodes));
+			p.del(Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, hostAndPort));
+			p.sync();
 		}
 	}
 
@@ -229,12 +259,14 @@ public class GroupServiceImpl implements GroupService {
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
 			Set<String> keys = dataStoreJedis.keys(Constants.getGroupRedisKey(redisPrefixKey, groupName) + ".*");
 
-			dataStoreJedis.srem(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
-			dataStoreJedis.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
-			dataStoreJedis.del(Constants.getGroupNoticeRedisKey(redisPrefixKey, groupName));
+			Pipeline p = dataStoreJedis.pipelined();
+			p.srem(Constants.getGroupsRedisKey(redisPrefixKey), groupName);
+			p.del(Constants.getGroupRedisKey(redisPrefixKey, groupName));
+			p.del(Constants.getGroupNoticeRedisKey(redisPrefixKey, groupName));
 			if (keys.size() > 0) {
-				dataStoreJedis.del(keys.toArray(new String[keys.size()]));
+				p.del(keys.toArray(new String[keys.size()]));
 			}
+			p.sync();
 		}
 	}
 

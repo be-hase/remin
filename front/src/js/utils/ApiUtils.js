@@ -167,6 +167,17 @@ var ApiUtils = {
             };
             _.assign(ajaxOptions, callbacks);
             return $.ajax(ajaxOptions);
+        },
+        changeGroupName: function(groupName, data, callbacks) {
+            var apiUrl = BASE_URL + '/api/group/' + groupName + '/change-group-name';
+
+            var ajaxOptions = {
+                type: 'POST',
+                url: apiUrl,
+                data: data
+            };
+            _.assign(ajaxOptions, callbacks);
+            return $.ajax(ajaxOptions);
         }
     },
     User: {

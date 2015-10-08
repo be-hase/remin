@@ -122,6 +122,15 @@ var GroupActions = {
         });
 
         ApiUtils.Group.addGroupNodes(groupName, data, callbacks);
+    },
+    changeGroupName: function(groupName, data, callbacks) {
+        callbacks = callbacks || {};
+
+        Utils.wrapSuccess(callbacks, function(data) {
+            GroupActions.getGroups();
+        });
+
+        ApiUtils.Group.changeGroupName(groupName, data, callbacks);
     }
 };
 

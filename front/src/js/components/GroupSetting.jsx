@@ -10,6 +10,7 @@ var GroupNoticeStore = require('../stores/GroupNoticeStore');
 var GroupSettingGeneral = require('../components/GroupSettingGeneral');
 var GroupSettingThreshold = require('../components/GroupSettingThreshold');
 var GroupSettingDelete = require('../components/GroupSettingDelete');
+var GroupSettingChangeName = require('../components/GroupSettingChangeName');
 var Utils = require('../utils/Utils');
 
 var GroupSetting = React.createClass({
@@ -33,6 +34,7 @@ var GroupSetting = React.createClass({
             <div className="group-setting-components">
                 <GroupSettingGeneral group={this.props.group} notice={this.state.notice} />
                 <GroupSettingThreshold group={this.props.group} notice={this.state.notice} />
+                <GroupSettingChangeName group={this.props.group} />
                 <GroupSettingDelete group={this.props.group} />
             </div>
         );
