@@ -21,11 +21,15 @@ var GroupSettingDelete = React.createClass({
         }
 
         return (
-            <div>
-                <div className="text-right">
-                    <button className="btn btn-default btn-xs" data-toggle="modal" data-target=".unregist-group-modal">Unregist this group.</button>
+            <div className="group-setting-delete-components">
+                <div className="panel panel-default">
+                    <div className="panel-heading clearfix">
+                        Unregist group
+                    </div>
+                    <div className="panel-body">
+                        <button className="btn btn-danger" data-toggle="modal" data-target=".unregist-group-modal">Unregist this group.</button>
+                    </div>
                 </div>
-
                 <div className="modal unregist-group-modal" ref="unregist-group-modal">
                     <div className="modal-dialog">
                         <div className="modal-content">

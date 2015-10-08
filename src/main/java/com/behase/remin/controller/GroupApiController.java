@@ -1,20 +1,5 @@
 package com.behase.remin.controller;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.behase.remin.exception.InvalidParameterException;
 import com.behase.remin.model.Group;
 import com.behase.remin.model.Notice;
@@ -26,8 +11,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 @RestController
@@ -116,6 +114,19 @@ public class GroupApiController {
 
 		groupService.deleteGroupNode(groupName, hostAndPort);
 		return groupService.getGroupWithHiddenPassword(groupName);
+	}
+
+	@RequestMapping(value = "/group/{groupName}/change-group-name", method = RequestMethod.POST)
+	public Object changeClusterName(
+			Authentication authentication,
+			@PathVariable String groupName,
+			@RequestParam String newGroupName
+	) throws IOException {
+		loggingOperationService.log("changeGroupName", authentication, "groupName={}, newGroupName={}.", groupName, newGroupName);
+
+		groupService.changeGroupName(groupName, newGroupName);
+
+		return groupService.getGroupWithHiddenPassword(newGroupName);
 	}
 
 	@RequestMapping(value = "/group/{groupName}/delete", method = RequestMethod.POST)
