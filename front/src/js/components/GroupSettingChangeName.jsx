@@ -23,7 +23,7 @@ var GroupSettingChangeName = React.createClass({
     },
     render: function() {
         var me = UserStore.getMe();
-        var hasPermission = !AUTH_ENABLED || me.role === 'RELUMIN_ADMIN';
+        var hasPermission = !AUTH_ENABLED || me.role === 'REMIN_ADMIN';
 
         if (!hasPermission) {
             return (
