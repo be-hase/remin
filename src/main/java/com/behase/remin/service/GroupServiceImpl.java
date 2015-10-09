@@ -162,7 +162,9 @@ public class GroupServiceImpl implements GroupService {
 
 		String groupPrefixKey = Constants.getGroupRedisKey(redisPrefixKey, groupName);
 		try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
-			Set<String> currentKeys = dataStoreJedis.keys(groupPrefixKey + "*");
+			Set<String> currentKeys = Sets.newHashSet(groupPrefixKey);
+			currentKeys.addAll(dataStoreJedis.keys(groupPrefixKey + ".*"));
+
 			Pipeline p = dataStoreJedis.pipelined();
 			currentKeys.forEach(currentKey -> {
 				String newKey = Constants.getGroupRedisKey(redisPrefixKey, newGroupName) + StringUtils.removeStart(currentKey, groupPrefixKey);
