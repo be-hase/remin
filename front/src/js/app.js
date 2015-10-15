@@ -9,7 +9,8 @@ var GroupActions = require('./actions/GroupActions');
 var UserActions = require('./actions/UserActions');
 
 $(function(){
-    if (window != window.parent) {
+    var getQuery = new URI().query(true);
+    if (_.has(getQuery, 'iframe')) {
         // if access from iframe
         $('head').append('<style>.dis-iframe {display: none;}</style>');
         USER = {
