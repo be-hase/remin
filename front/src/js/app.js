@@ -3,6 +3,8 @@ require('bootstrap');
 var React = require('react');
 var Router = require('react-router');
 var Highcharts = require('react-highcharts');
+var URI = require('urijs');
+var _ = require('lodash');
 
 var appRoutes = require('./routers/AppRoutes');
 var GroupActions = require('./actions/GroupActions');
