@@ -28,9 +28,12 @@ var GroupTab = React.createClass({
             );
         });
         return (
-            <ul className="nav nav-tabs group-tab-components">
-                {list}
-            </ul>
+            <div className="group-tab-components">
+                <h2><span className="glyphicon glyphicon-menu-right"></span> {groupName}</h2>
+                <ul className="nav nav-tabs">
+                    {list}
+                </ul>
+            </div>
         );
     }
 });

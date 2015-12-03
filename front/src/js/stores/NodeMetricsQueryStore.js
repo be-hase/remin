@@ -80,11 +80,14 @@ function setLocalStorage(groupName, query) {
 
 function getDefault(groupName) {
     var group = GroupStore.getGroup(groupName);
+    var hostAndPortsArray = _.map(group.nodes, function(node) {
+        return node.host_and_port;
+    });
 
     var query = {
         start: false,
         end: false,
-        hostAndPorts: group.nodes[0].host_and_port,
+        hostAndPorts: hostAndPortsArray.join(','),
         fields: defaultNodeMetricsNames,
         autoRefresh: true
     };
