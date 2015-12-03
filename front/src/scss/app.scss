@@ -50,6 +50,7 @@
     }
 }
 .side-nav > li > a {
+    font-size: 12px;
     padding-top: 10px;
     padding-bottom: 10px;
     white-space: nowrap;
@@ -132,6 +133,10 @@
 // group-tab-components //
 .group-tab-components {
     margin-bottom: 30px;
+    h2 {
+        font-size: 20px;
+        margin-bottom: 15px;
+    }
 }
 
 //group-monitoring-query-components//

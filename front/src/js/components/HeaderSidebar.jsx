@@ -44,7 +44,7 @@ var HeaderSidebar = React.createClass({
         var registAndCreateGroupMenuView;
         if (!AUTH_ENABLED || me.role === 'REMIN_ADMIN') {
             registAndCreateGroupMenuView = [
-                (<li><a href="#" data-toggle="modal" data-target=".regist-group-modal-components">Regist group</a></li>),
+                (<li key="regist-group"><a href="#" data-toggle="modal" data-target=".regist-group-modal-components">Regist group</a></li>),
             ];
         }
 
