@@ -54,13 +54,22 @@ public class GroupApiController {
 
 		if (StringUtils.equalsIgnoreCase(full, "true")) {
 			List<Group> groups = Lists.newArrayList();
-			groupNames.forEach(groupName -> {
+			Map<String, Group> groupsMap = Maps.newHashMap();
+
+			groupNames.parallelStream().forEach(groupName -> {
 				try {
-					groups.add(groupService.getGroupWithHiddenPassword(groupName));
+					groupsMap.put(groupName, groupService.getGroupWithHiddenPassword(groupName));
 				} catch (Exception e) {
 					log.error("Failed to get group. groupName = {}", groupName, e);
 				}
 			});
+			groupNames.forEach(groupName -> {
+				Group group = groupsMap.get(groupName);
+				if (group != null) {
+					groups.add(group);
+				}
+			});
+
 			return groups;
 		} else {
 			return groupNames;
