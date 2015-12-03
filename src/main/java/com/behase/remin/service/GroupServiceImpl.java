@@ -281,13 +281,13 @@ public class GroupServiceImpl implements GroupService {
 
 		Map<String, Map<String, List<List<Object>>>> result = Maps.newLinkedHashMap();
 
-		for (String hostAndPort : hostAndPorts) {
+		hostAndPorts.parallelStream().forEach(hostAndPort -> {
 			log.debug("hostAndPort loop : {}", hostAndPort);
 			Map<String, List<List<Object>>> staticsInfoHistory = nodeService.getStaticsInfoHistory(groupName, hostAndPort, fields, start, end);
 			if (!staticsInfoHistory.isEmpty()) {
 				result.put(hostAndPort, staticsInfoHistory);
 			}
-		}
+		});
 
 		return result;
 	}
