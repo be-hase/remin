@@ -53,9 +53,7 @@ public class UserServiceImpl implements UserService {
         if (users == null) {
             return null;
         }
-        return users.stream().filter(v -> {
-            return StringUtils.equalsIgnoreCase(username, v.getUsername());
-        }).findFirst().orElse(null);
+        return users.stream().filter(v -> StringUtils.equalsIgnoreCase(username, v.getUsername())).findFirst().orElse(null);
     }
 
     @Override
@@ -171,10 +169,9 @@ public class UserServiceImpl implements UserService {
     }
 
     private LoginUser getUser(List<LoginUser> users, String username) {
-        return users.stream().filter(v -> {
-            return StringUtils.equalsIgnoreCase(username, v.getUsername());
-        }).findFirst().orElseThrow(() -> {
-            return new InvalidParameterException(String.format("'%s' does not exist.", username));
-        });
+        return users.stream()
+                .filter(v -> StringUtils.equalsIgnoreCase(username, v.getUsername()))
+                .findFirst()
+                .orElseThrow(() -> new InvalidParameterException(String.format("'%s' does not exist.", username)));
     }
 }

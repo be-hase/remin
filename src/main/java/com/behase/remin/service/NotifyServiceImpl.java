@@ -14,9 +14,11 @@ import org.springframework.mail.MailSender;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PreDestroy;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,6 +40,20 @@ public class NotifyServiceImpl implements NotifyService {
     private ObjectMapper mapper;
 
     private ExecutorService senderService = Executors.newFixedThreadPool(10);
+
+    @PreDestroy
+    public void preDestroy() {
+        if (senderService != null) {
+            senderService.shutdown();
+            try {
+                if (senderService.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+                    senderService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                senderService.shutdownNow();
+            }
+        }
+    }
 
     @Override
     public void notify(final Group group, final Notice notice, final List<NoticeJob> jobs) {

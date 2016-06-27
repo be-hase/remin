@@ -6,8 +6,6 @@ public class Constants {
     private Constants() {
     }
 
-    ;
-
     public static final int ALL_SLOTS_SIZE = 16384;
 
     public static final String ERR_CODE_INVALID_PARAMETER = "400_000";

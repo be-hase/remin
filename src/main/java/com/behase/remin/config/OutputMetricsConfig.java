@@ -4,7 +4,6 @@ import lombok.Data;
 
 @Data
 public class OutputMetricsConfig {
-    //	private OutputMetricsFileConfig file = new OutputMetricsFileConfig();
     private OutputMetricsFluentdConfig fluentd = new OutputMetricsFluentdConfig();
 
     @Data

@@ -60,7 +60,7 @@ public class NodeServiceImpl implements NodeService {
         int endIndex = OFFSET;
         boolean validStart = true;
         boolean validEnd = true;
-        while (true && (validStart || validEnd)) {
+        while (validStart || validEnd) {
             log.debug("statics loop. startIndex : {}", startIndex);
             List<Map<String, String>> staticsList = getStaticsInfoHistoryFromRedis(groupName, hostAndPort, fields, startIndex, endIndex);
             if (staticsList == null || staticsList.isEmpty()) {
@@ -81,29 +81,38 @@ public class NodeServiceImpl implements NodeService {
         }
         Collections.reverse(rangeResult);
 
+        long thresholdMillis = getThresholdMillis(start, end);
+        return getAveragedStaticsInfoHistory(rangeResult, fields, thresholdMillis);
+    }
+
+    long getThresholdMillis(long start, long end) {
         long durationMillis = end - start;
-        long thresholdMillis;
         if (durationMillis <= (long) 1 * 24 * 60 * 60 * 1000) { // 1day
-            thresholdMillis = Long.MIN_VALUE;
+            return Long.MIN_VALUE;
         } else if (durationMillis <= (long) 7 * 24 * 60 * 60 * 1000) { // 7days
-            thresholdMillis = 5 * 60 * 1000;
+            return 5 * 60 * 1000; // 5 min
         } else if (durationMillis <= (long) 30 * 24 * 60 * 60 * 1000) { // 30 days
-            thresholdMillis = 30 * 60 * 1000;
+            return 30 * 60 * 1000; // 30 min
         } else if (durationMillis <= (long) 60 * 24 * 60 * 60 * 1000) { // 60 days
-            thresholdMillis = 1 * 60 * 60 * 1000;
+            return 1 * 60 * 60 * 1000; // 1 hour
         } else if (durationMillis <= (long) 120 * 24 * 60 * 60 * 1000) { // 120 days
-            thresholdMillis = 2 * 60 * 60 * 1000;
-        } else if (durationMillis <= (long) 120 * 24 * 60 * 60 * 1000) { // 180 days
-            thresholdMillis = 6 * 60 * 60 * 1000;
+            return 2 * 60 * 60 * 1000; // 2 hours
+        } else if (durationMillis <= (long) 180 * 24 * 60 * 60 * 1000) { // 180 days
+            return 6 * 60 * 60 * 1000; // 6 hours
         } else if (durationMillis <= (long) 365 * 24 * 60 * 60 * 1000) { // 1 years
-            thresholdMillis = 12 * 60 * 60 * 1000;
+            return 12 * 60 * 60 * 1000; // 12 hours
         } else {
-            thresholdMillis = 24 * 60 * 60 * 1000;
+            return 24 * 60 * 60 * 1000; // 24 hours
         }
+    }
+
+    Map<String, List<List<Object>>> getAveragedStaticsInfoHistory(List<Map<String, String>> rangeResult, List<String> fields, long thresholdMillis) {
 
         Map<String, List<List<Object>>> averageResult = Maps.newConcurrentMap();
         fields.parallelStream().forEach(field -> {
             List<List<Object>> fieldAverageResult = Lists.newArrayList();
+
+            // init data
             long preTimestamp = 0;
             BigDecimal sum = new BigDecimal(0);
             long sumTs = 0;
@@ -119,10 +128,12 @@ public class NodeServiceImpl implements NodeService {
                 }
 
                 if (preTimestamp > timestamp) {
+                    // this is invalid timestamp.
+                    // Iterate data should be sorted. Maybe, there is some noisy data.
                     continue;
                 }
 
-                if (preTimestamp == 0) {
+                if (preTimestamp == 0) { // is first. average start point.
                     preTimestamp = timestamp;
                     sum = value;
                     sumTs = timestamp;
@@ -138,33 +149,23 @@ public class NodeServiceImpl implements NodeService {
                     sumTs += timestamp;
                     count++;
                 } else {
-                    BigDecimal averageValue = new BigDecimal(0);
-                    if (count != 0) {
-                        averageValue = sum.divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP);
+                    if (count > 0) {
+                        BigDecimal averageValue = sum.divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP);
+                        long averageTs = sumTs / count;
+                        log.debug("ESCAPE threshold. averageValue={}, averageTs={}, sum={}, sumTs={}, sumCount={}", averageValue, averageTs, sum, sumTs, count);
+                        fieldAverageResult.add(Lists.newArrayList(averageTs, averageValue.doubleValue()));
                     }
-                    long averageTs = 0;
-                    if (count != 0) {
-                        averageTs = sumTs / count;
-                    }
-                    log.debug("ESCAPE threshold. averageValue={}, averageTs={}, sum={}, sumTs={}, sumCount={}", averageValue, averageTs, sum, sumTs, count);
-                    fieldAverageResult.add(Lists.newArrayList(averageTs, averageValue.doubleValue()));
 
-                    preTimestamp = 0;
-                    sum = new BigDecimal(0);
-                    sumTs = 0;
-                    count = 0;
+                    preTimestamp = timestamp; // average start point.
+                    sum = value;
+                    sumTs = timestamp;
+                    count = 1;
                 }
             }
 
-            if (preTimestamp != 0) {
-                BigDecimal averageValue = new BigDecimal(0);
-                if (count != 0) {
-                    averageValue = sum.divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP);
-                }
-                long averageTs = 0;
-                if (count != 0) {
-                    averageTs = sumTs / count;
-                }
+            if (count > 0) {
+                BigDecimal averageValue = sum.divide(new BigDecimal(count), 4, BigDecimal.ROUND_HALF_UP);
+                long averageTs = sumTs / count;
                 log.debug("ESCAPE threshold. averageValue={}, averageTs={}, sum={}, sumTs={}, sumCount={}", averageValue, averageTs, sum, sumTs, count);
                 fieldAverageResult.add(Lists.newArrayList(averageTs, averageValue.doubleValue()));
             }
