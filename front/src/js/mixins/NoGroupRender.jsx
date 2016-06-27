@@ -1,5 +1,3 @@
-var React = require('react');
-
 var NoGroupRender = {
     renderNoGroup: function(groupName, key) {
         return (
