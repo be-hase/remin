@@ -26,7 +26,7 @@ public class Application extends WebMvcConfigurerAdapter {
 	private static final String CONFIG_LOCATION = "config";
 
 	public static void main(String[] args) throws IOException {
-		String configLocation = System.getProperty(CONFIG_LOCATION, "remin-local-conf.yml");
+		String configLocation = System.getProperty(CONFIG_LOCATION, "remin-local-conf.yml.sample");
 		checkArgument(configLocation != null, "Specify config VM parameter.");
 
 		ReminConfig config = ReminConfig.create(configLocation);
