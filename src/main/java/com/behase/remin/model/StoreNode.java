@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class StoreNode {
-	private String hostAndPort;
-	private String password;
+    private String hostAndPort;
+    private String password;
 }

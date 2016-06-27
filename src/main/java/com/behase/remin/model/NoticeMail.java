@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class NoticeMail {
-	private String to;
-	private String from;
+    private String to;
+    private String from;
 }
