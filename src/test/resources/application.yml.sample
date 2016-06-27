@@ -1,18 +1,39 @@
+#### Copy from main/resource/application.yml
+endpoints:
+  shutdown:
+    enabled: true
+
+spring:
+  freemarker:
+    charset: UTF-8
+
+security:
+  basic:
+    enabled: false
+
+build:
+  number: 8
+
 #### SPRING BOOT SETTING ###
+
+
+#### REMIN INTERNAL SETTING ###
+remin:
+  host:
+
 server:
   port: 0
 
 management:
   port: 0
-
-#### REMIN SETTING ###
-remin:
-  host:
+  add-application-context-header: false
+  security:
+    enabled: false
 
 redis:
   prefixKey: _remin
-  host: 192.168.33.11
-  port: 6000
+  host: YOUR_REDIS_HOST
+  port: 9000
 
 auth:
   enabled: false
@@ -20,12 +41,12 @@ auth:
 
 notice:
   mail:
-    host: alpha-smtp.linegame.jp
-    port: 25
-    from: ryosuke.hasebe@linecorp.com
+    host:
+    port: 0
+    from:
     user:
     password:
-    charset: utf-8
+    charset: UTF-8
 
 scheduler:
   refreshClustersIntervalMillis: 0
@@ -45,7 +66,4 @@ outputMetrics:
 # TEST PROPERTIES
 test:
   redis:
-    normalStandAlone: 192.168.33.11:9000
-    normalStandAloneAll: 192.168.33.11:9000,192.168.33.11:9001,192.168.33.11:9002
-    emptyStandAlone: 192.168.33.11:9003
-    emptyStandAloneAll: 192.168.33.11:9003,192.168.33.11:9004,192.168.33.11:9005
+    host: YOUR_REDIS_HOST

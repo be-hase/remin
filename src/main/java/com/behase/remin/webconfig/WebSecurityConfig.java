@@ -1,7 +1,6 @@
 package com.behase.remin.webconfig;
 
-import javax.servlet.http.HttpServletResponse;
-
+import com.behase.remin.model.Role;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
@@ -15,68 +14,68 @@ import org.springframework.security.web.authentication.rememberme.InMemoryTokenR
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestHeaderRequestMatcher;
 
-import com.behase.remin.model.Role;
+import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
-	@Autowired
-	private UserDetailsService userDetailsService;
+    @Autowired
+    private UserDetailsService userDetailsService;
 
-	@Value("${auth.enabled}")
-	private boolean authEnabled;
+    @Value("${auth.enabled}")
+    private boolean authEnabled;
 
-	@Value("${auth.allowAnonymous}")
-	private boolean authAllowAnonymous;
+    @Value("${auth.allowAnonymous}")
+    private boolean authAllowAnonymous;
 
-	@Override
-	protected void configure(HttpSecurity http) throws Exception {
-		http.csrf().disable();
-		http.headers().disable();
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http.csrf().disable();
+        http.headers().disable();
 
-		if (authEnabled) {
-			http
-				.rememberMe()
-				.tokenRepository(new InMemoryTokenRepositoryImpl())
-				.tokenValiditySeconds(Integer.MAX_VALUE).and()
+        if (authEnabled) {
+            http
+                    .rememberMe()
+                    .tokenRepository(new InMemoryTokenRepositoryImpl())
+                    .tokenValiditySeconds(Integer.MAX_VALUE).and()
 
-				.authorizeRequests()
-				.antMatchers("/login", "/css/**", "/js/**", "/img/**", "**/favicon.ico", "/vendor/**")
-				.permitAll()
-				.antMatchers(HttpMethod.POST, "/api/group/*", "/api/group/*/add-nodes", "/api/group/*/*/delete", "/api/group/*/delete", "/api/group/*/notice")
-				.hasAuthority(Role.REMIN_ADMIN.getAuthority())
-				.antMatchers(HttpMethod.POST, "/api/user/**")
-				.hasAuthority(Role.REMIN_ADMIN.getAuthority())
-				.and()
+                    .authorizeRequests()
+                    .antMatchers("/login", "/css/**", "/js/**", "/img/**", "**/favicon.ico", "/vendor/**")
+                    .permitAll()
+                    .antMatchers(HttpMethod.POST, "/api/group/*", "/api/group/*/add-nodes", "/api/group/*/*/delete", "/api/group/*/delete", "/api/group/*/notice")
+                    .hasAuthority(Role.REMIN_ADMIN.getAuthority())
+                    .antMatchers(HttpMethod.POST, "/api/user/**")
+                    .hasAuthority(Role.REMIN_ADMIN.getAuthority())
+                    .and()
 
-				.formLogin()
-				.loginPage("/login")
-				.defaultSuccessUrl("/")
-				.and()
+                    .formLogin()
+                    .loginPage("/login")
+                    .defaultSuccessUrl("/")
+                    .and()
 
-				.logout()
-				.logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
-				.logoutSuccessUrl("/")
-				.and()
+                    .logout()
+                    .logoutRequestMatcher(new AntPathRequestMatcher("/logout"))
+                    .logoutSuccessUrl("/")
+                    .and()
 
-				.exceptionHandling()
-				.accessDeniedHandler((request, response, accessDeniedException) -> response.setStatus(HttpServletResponse.SC_FORBIDDEN))
-				.defaultAuthenticationEntryPointFor(
-					(request, response, authException) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED),
-					new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest")
-				);
+                    .exceptionHandling()
+                    .accessDeniedHandler((request, response, accessDeniedException) -> response.setStatus(HttpServletResponse.SC_FORBIDDEN))
+                    .defaultAuthenticationEntryPointFor(
+                            (request, response, authException) -> response.setStatus(HttpServletResponse.SC_UNAUTHORIZED),
+                            new RequestHeaderRequestMatcher("X-Requested-With", "XMLHttpRequest")
+                    );
 
-			if (!authAllowAnonymous) {
-				http
-					.authorizeRequests()
-					.anyRequest()
-					.authenticated();
-			}
-		}
+            if (!authAllowAnonymous) {
+                http
+                        .authorizeRequests()
+                        .anyRequest()
+                        .authenticated();
+            }
+        }
 
-	}
+    }
 
-	@Autowired
-	public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
-		auth.userDetailsService(userDetailsService).passwordEncoder(new StandardPasswordEncoder());
-	}
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.userDetailsService(userDetailsService).passwordEncoder(new StandardPasswordEncoder());
+    }
 }
