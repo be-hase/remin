@@ -93,7 +93,7 @@ public class NodeServiceImpl implements NodeService {
             if (StringUtils.isNotBlank(password)) {
                 jedis.auth(password);
             }
-            List<Slowlog> slowLogs = jedis.slowlogGet();
+            List<Slowlog> slowLogs = jedis.slowlogGet(100);
             jedis.slowlogReset();
 
             return slowLogs.stream()

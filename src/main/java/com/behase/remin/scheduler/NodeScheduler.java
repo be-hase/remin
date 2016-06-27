@@ -96,7 +96,9 @@ public class NodeScheduler {
                         Map<String, String> staticsInfo = nodeService.getStaticsInfo(node.getHostAndPort(), node.getPassword());
                         staticsInfos.put(node.getHostAndPort(), staticsInfo);
 
-                        slowLogs.addAll(nodeService.getSlowLogAndReset(node.getHostAndPort(), node.getPassword()));
+                        if (collectSlowLogMaxCount > 0) {
+                            slowLogs.addAll(nodeService.getSlowLogAndReset(node.getHostAndPort(), node.getPassword()));
+                        }
 
                         try (Jedis jedis = datastoreJedisPool.getResource()) {
                             String key = Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, node.getHostAndPort());
