@@ -28,8 +28,8 @@ public class Constants {
         return Joiner.on(".").join(prefixKey, "group", groupName, "notice").toString();
     }
 
-    public static String getNodeRedisKey(String prefixKey, String groupName, String hostAndPort) {
-        return Joiner.on(".").join(prefixKey, "group", groupName, "hostAndPort", hostAndPort).toString();
+    public static String getGroupSlowLogRedisKey(String prefixKey, String groupName) {
+        return Joiner.on(".").join(prefixKey, "group", groupName, "slowLog").toString();
     }
 
     public static String getNodeStaticsInfoRedisKey(String prefixKey, String groupName, String hostAndPort) {

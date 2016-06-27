@@ -2,6 +2,7 @@ package com.behase.remin.service;
 
 import com.behase.remin.Constants;
 import com.behase.remin.exception.InvalidParameterException;
+import com.behase.remin.model.SlowLog;
 import com.behase.remin.util.JedisUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
+import redis.clients.util.Slowlog;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -83,6 +85,23 @@ public class NodeServiceImpl implements NodeService {
 
         long thresholdMillis = getThresholdMillis(start, end);
         return getAveragedStaticsInfoHistory(rangeResult, fields, thresholdMillis);
+    }
+
+    @Override
+    public List<SlowLog> getSlowLogAndReset(String hostAndPort, String password) {
+        try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
+            if (StringUtils.isNotBlank(password)) {
+                jedis.auth(password);
+            }
+            List<Slowlog> slowLogs = jedis.slowlogGet();
+            jedis.slowlogReset();
+
+            return slowLogs.stream()
+                    .map(v -> SlowLog.builder()
+                            .id(v.getId()).hostAndPort(hostAndPort)
+                            .timeStamp(v.getTimeStamp()).executionTime(v.getExecutionTime())
+                            .args(v.getArgs()).build()).collect(Collectors.toList());
+        }
     }
 
     long getThresholdMillis(long start, long end) {

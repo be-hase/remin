@@ -3,6 +3,8 @@ package com.behase.remin.controller;
 import com.behase.remin.exception.InvalidParameterException;
 import com.behase.remin.model.Group;
 import com.behase.remin.model.Notice;
+import com.behase.remin.model.PagerData;
+import com.behase.remin.model.SlowLog;
 import com.behase.remin.service.GroupService;
 import com.behase.remin.service.LoggingOperationService;
 import com.behase.remin.service.NodeService;
@@ -161,12 +163,12 @@ public class GroupApiController {
         try {
             startLong = Long.valueOf(start);
         } catch (Exception e) {
-            throw new InvalidParameterException("'start' is must be number.");
+            throw new InvalidParameterException("'start' must be number.");
         }
         try {
             endLong = Long.valueOf(end);
         } catch (Exception e) {
-            throw new InvalidParameterException("'end' is must be number.");
+            throw new InvalidParameterException("'end' must be number.");
         }
 
         List<String> hostAndPortList = Lists.newArrayList();
@@ -220,5 +222,27 @@ public class GroupApiController {
 
         groupService.setGroupNotice(groupName, noticeObj);
         return groupService.getGroupNotice(groupName);
+    }
+
+    @RequestMapping(value = "/group/{groupName}/slowlog", method = {RequestMethod.GET})
+    public PagerData<SlowLog> getSlowLogs(
+            @PathVariable String groupName,
+            @RequestParam(defaultValue = "0") String offset,
+            @RequestParam(defaultValue = "1000") String limit
+    ) {
+        long offsetLong;
+        long limitLong;
+        try {
+            offsetLong = Long.valueOf(offset);
+        } catch (Exception e) {
+            throw new InvalidParameterException("offset must be number.");
+        }
+        try {
+            limitLong = Long.valueOf(limit);
+        } catch (Exception e) {
+            throw new InvalidParameterException("limit must be number.");
+        }
+
+        return groupService.getGroupSlowLogHistory(groupName, offsetLong, limitLong);
     }
 }

@@ -2,6 +2,8 @@ package com.behase.remin.service;
 
 import com.behase.remin.model.Group;
 import com.behase.remin.model.Notice;
+import com.behase.remin.model.PagerData;
+import com.behase.remin.model.SlowLog;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import java.io.IOException;
@@ -34,4 +36,6 @@ public interface GroupService {
 
     Map<String, Map<String, List<List<Object>>>> getGroupStaticsInfoHistory(String groupName,
                                                                             List<String> hostAndPorts, List<String> fields, long start, long end);
+
+    PagerData<SlowLog> getGroupSlowLogHistory(String clusterName, long offset, long limit);
 }

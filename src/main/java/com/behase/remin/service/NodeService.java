@@ -1,5 +1,7 @@
 package com.behase.remin.service;
 
+import com.behase.remin.model.SlowLog;
+
 import java.util.List;
 import java.util.Map;
 
@@ -8,4 +10,6 @@ public interface NodeService {
 
     Map<String, List<List<Object>>> getStaticsInfoHistory(String groupName, String hostAndPort, List<String> fields,
                                                           long start, long end);
+
+    List<SlowLog> getSlowLogAndReset(String hostAndPort, String password);
 }
