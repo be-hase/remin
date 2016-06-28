@@ -8,6 +8,8 @@ import com.behase.remin.util.ValidationUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Joiner;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -125,9 +127,11 @@ public class GroupServiceImpl implements GroupService {
             }
         });
 
-        List<StoreNode> storeNodes = hostAndPorts.stream().map(v -> {
+        List<StoreNode> storeNodes = hostAndPortsSet.stream().map(v -> {
+            List<String> hostAndPortList = Splitter.on(":").trimResults().splitToList(v);
+
             StoreNode storeNode = new StoreNode();
-            storeNode.setHostAndPort(v);
+            storeNode.setHostAndPort(Joiner.on(":").join(hostAndPortList));
             storeNode.setPassword(StringUtils.defaultIfBlank(password, ""));
             return storeNode;
         }).collect(Collectors.toList());

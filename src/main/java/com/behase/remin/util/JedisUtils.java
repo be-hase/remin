@@ -1,6 +1,7 @@
 package com.behase.remin.util;
 
 import com.behase.remin.exception.InvalidParameterException;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import lombok.extern.slf4j.Slf4j;
@@ -14,17 +15,16 @@ import java.util.Set;
 @Slf4j
 public class JedisUtils {
     private JedisUtils() {
-
     }
 
     public static Jedis getJedisByHostAndPort(String hostAndPort, int timeout) {
-        String[] hostAndPortArray = StringUtils.split(hostAndPort, ":");
-        return new Jedis(hostAndPortArray[0], Integer.valueOf(hostAndPortArray[1]), timeout);
+        List<String> hostAndPortList = Splitter.on(":").trimResults().splitToList(hostAndPort);
+        return new Jedis(hostAndPortList.get(0), Integer.valueOf(hostAndPortList.get(1)), timeout);
     }
 
     public static Jedis getJedisByHostAndPort(String hostAndPort) {
-        String[] hostAndPortArray = StringUtils.split(hostAndPort, ":");
-        return new Jedis(hostAndPortArray[0], Integer.valueOf(hostAndPortArray[1]));
+        List<String> hostAndPortList = Splitter.on(":").trimResults().splitToList(hostAndPort);
+        return new Jedis(hostAndPortList.get(0), Integer.valueOf(hostAndPortList.get(1)));
     }
 
     public static Map<String, String> parseInfoResult(String result) {
