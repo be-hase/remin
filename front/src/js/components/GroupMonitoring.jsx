@@ -182,7 +182,7 @@ var GroupMonitoring = React.createClass({
                 }
             },
             tooltip: {
-                xDateFormat: '%Y/%m/%d %H:%M',
+                xDateFormat: '%Y/%m/%d %H:%M:%S',
                 pointFormatter: function() {
                     return '<span style="color:'+this.color+'">\u25CF</span> ' + this.series.name + ' : <b>' + numeral(this.y).format('0,0.[0000]') + '</b><br/>';
                 }

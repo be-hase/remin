@@ -4,27 +4,47 @@ var classSet = React.addons.classSet;
 
 var GroupStore = require('../stores/GroupStore');
 
+var tabs = [
+    {
+        name: 'Monitoring',
+        link: 'monitoring'
+    },
+    {
+        name: 'Slow log',
+        link: 'slowlog'
+    },
+    {
+        name: 'Info',
+        link: 'info'
+    },
+    {
+        name: 'Setting',
+        link: 'setting'
+    }
+];
+
 var GroupTab = React.createClass({
     mixins: [Router.State],
     render: function() {
-        var _this = this;
         var paths = this.getPathname().split('/');
         var tab = paths[3] || 'monitoring';
         var groupName = this.props.group.group_name;
         var list = [];
 
-        _.each(['Monitoring', 'Info', 'Setting'], function(val){
-            var lowerVal = val.toLowerCase();
+        _.each(tabs, function(val){
             var liClass = classSet({
-                'active': lowerVal === tab
+                'active': val.link === tab
             });
             var href = '#/group/' + groupName;
-            if (lowerVal !== 'monitoring') {
-                href += '/' + lowerVal;
+            if (val.link !== 'monitoring') {
+                href += '/' + val.link;
+            }
+            if (val.link === 'slowlog') {
+                href += '/1';
             }
 
             list.push(
-                <li key={val} className={liClass}><a href={href}>{val}</a></li>
+                <li key={val.link} className={liClass}><a href={href}>{val.name}</a></li>
             );
         });
         return (
