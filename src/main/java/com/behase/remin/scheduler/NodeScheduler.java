@@ -26,7 +26,6 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -125,8 +124,14 @@ public class NodeScheduler {
                 }
 
                 // Notice
-                if (notice != null) {
-                    checkThresholdAndPublishNotify(notice, group, staticsInfos);
+                if (notice == null) {
+                    log.debug("No notice setting, so skip.");
+                } else {
+                    List<NoticeJob> noticeJobs = getNoticeJobs(notice, group, staticsInfos);
+                    if (shouldNotifyDisconnected(notice, group) || !noticeJobs.isEmpty()) {
+                        log.info("NOTIFY !! {}", noticeJobs);
+                        notifyService.notify(group, notice, noticeJobs);
+                    }
                 }
             } catch (Exception e) {
                 log.error("collectStaticsInfo fail. {}", groupName, e);
@@ -174,65 +179,66 @@ public class NodeScheduler {
         }
     }
 
-    public void checkThresholdAndPublishNotify(Notice notice, Group group,
-                                               Map<String, Map<String, String>> staticsInfos) {
-        log.debug("checkThresholdAndPublishNotify call. notice={}, group={}", notice, group);
-        if (StringUtils.isNotBlank(notice.getInvalidEndTime())) {
-            try {
-                Long time = Long.valueOf(notice.getInvalidEndTime());
-                if (System.currentTimeMillis() < time) {
-                    log.debug("NOW ignore to notify.");
-                    return;
-                }
-            } catch (Exception e) {
-            }
-        }
-        String from = StringUtils.isNotBlank(notice.getMail().getFrom()) ? notice.getMail().getFrom() : noticeMailFrom;
-        boolean notNotifyByMail = StringUtils.isBlank(noticeMailHost) || noticeMailPort == 0
-                || StringUtils.isBlank(from);
-        boolean notNotifyByHttp = StringUtils.isBlank(notice.getHttp().getUrl());
-        if (notNotifyByMail && notNotifyByHttp) {
-            if (notice.getItems().size() > 0) {
-                log.warn("You set notification threshold, But mail or http is not set.");
-            }
-            return;
+    boolean shouldNotifyDisconnected(Notice notice, Group group) {
+        if (isInInvalidEndTime(notice)) {
+            // ignore
+            return false;
         }
 
-        List<NoticeJob> noticeJobs = Lists.newArrayList();
-
-        boolean notifyDisconnected = false;
         if (notice.isNotifyWhenDisconnected()) {
             List<String> disconnectedHostAndPorts = group.getNodes().stream().filter(node -> !node.isConnected()).map(Node::getHostAndPort).collect(Collectors.toList());
             if (!disconnectedHostAndPorts.isEmpty()) {
-                notifyDisconnected = true;
+                return true;
             }
+        }
+
+        return false;
+    }
+
+    List<NoticeJob> getNoticeJobs(Notice notice, Group group,
+                                  Map<String, Map<String, String>> staticsInfos) {
+        List<NoticeJob> noticeJobs = Lists.newArrayList();
+
+        if (isInInvalidEndTime(notice)) {
+            // ignore
+            return noticeJobs;
         }
 
         for (NoticeItem item : notice.getItems()) {
             List<ResultValue> resultValues = Lists.newArrayList();
-            for (Entry<String, Map<String, String>> e : staticsInfos.entrySet()) {
-                String hostAndPort = e.getKey();
-                Map<String, String> staticsInfo = e.getValue();
+
+            staticsInfos.forEach((hostAndPort, staticsInfo) -> {
                 String targetNodeInfoVal = staticsInfo.get(item.getMetricsName());
 
-                if (isNotify(item.getValueType(), item.getOperator(), targetNodeInfoVal, item.getValue())) {
+                if (shouldNotify(item.getValueType(), item.getOperator(), targetNodeInfoVal, item.getValue())) {
                     resultValues.add(new ResultValue(hostAndPort, targetNodeInfoVal));
                 }
-            }
+            });
+
             if (resultValues.size() > 0) {
                 noticeJobs.add(new NoticeJob(item, resultValues));
             }
         }
 
-        if (notifyDisconnected || !noticeJobs.isEmpty()) {
-            log.info("NOTIFY !! {}", noticeJobs);
-            notifyService.notify(group, notice, noticeJobs);
-        }
-
-        log.debug("checkThresholdAndPublishNotify finish");
+        return noticeJobs;
     }
 
-    public boolean isNotify(String valueType, String operator, String value, String threshold) {
+    boolean isInInvalidEndTime(Notice notice) {
+        if (StringUtils.isNotBlank(notice.getInvalidEndTime())) {
+            try {
+                Long time = Long.valueOf(notice.getInvalidEndTime());
+                if (System.currentTimeMillis() < time) {
+                    log.info("NOW ignore notify. notice={}", notice);
+                    return true;
+                }
+            } catch (Exception e) {
+            }
+        }
+
+        return false;
+    }
+
+    boolean shouldNotify(String valueType, String operator, String value, String threshold) {
         if (value == null) {
             return false;
         }
