@@ -10,6 +10,7 @@ module.exports = keyMirror({
     SET_NODE_METRICS_QUERY: null,
     SET_NODE_METRICS_QUERY_ONLY_AUTO_REFRESH: null,
     GET_GROUP_NOTICE: null,
+    GET_GROUP_SLOWLOG: null,
     DELETE_GROUP: null,
     GET_USERS: null
 });

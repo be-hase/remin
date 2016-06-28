@@ -2,10 +2,7 @@ package com.behase.remin.service;
 
 import com.behase.remin.Constants;
 import com.behase.remin.exception.InvalidParameterException;
-import com.behase.remin.model.Group;
-import com.behase.remin.model.Node;
-import com.behase.remin.model.Notice;
-import com.behase.remin.model.StoreNode;
+import com.behase.remin.model.*;
 import com.behase.remin.util.JedisUtils;
 import com.behase.remin.util.ValidationUtils;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -287,20 +284,21 @@ public class GroupServiceImpl implements GroupService {
         return result;
     }
 
-    Group getGroupWithNoCheckConnection(String groupName) {
-        try (Jedis dataStoreJedis = dataStoreJedisPool.getResource()) {
-            List<String> hostAndPorts = dataStoreJedis.lrange(Constants.getGroupRedisKey(redisPrefixKey, groupName), 0, -1);
+    @Override
+    public PagerData<SlowLog> getGroupSlowLogHistory(String groupName, long offset, long limit) {
+        try (Jedis jedis = dataStoreJedisPool.getResource()) {
+            String key = Constants.getGroupSlowLogRedisKey(redisPrefixKey, groupName);
+            List<String> strs = jedis.lrange(key, offset, offset + limit - 1);
+            long total = jedis.llen(key);
+            List<SlowLog> slowLogs = strs.stream().map(v -> {
+                try {
+                    return mapper.readValue(v, SlowLog.class);
+                } catch (IOException e) {
+                    return null;
+                }
+            }).filter(v -> v != null).collect(Collectors.toList());
 
-            List<Node> nodes = hostAndPorts.stream().map(hostAndPort -> {
-                Node node = new Node();
-                node.setHostAndPort(hostAndPort);
-                return node;
-            }).collect(Collectors.toList());
-
-            Group group = new Group();
-            group.setGroupName(groupName);
-            group.setNodes(nodes);
-            return group;
+            return new PagerData(offset, limit, total, slowLogs);
         }
     }
 }

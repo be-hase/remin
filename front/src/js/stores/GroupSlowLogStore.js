@@ -7,9 +7,9 @@ var _data = {};
 
 var CHANGE_EVENT = 'change';
 
-var NodeMetricsStore = assign({}, EventEmitter.prototype, {
-    getNodeMetrics: function(groupName) {
-        return _data[groupName];
+var GroupSlowLogStore = assign({}, EventEmitter.prototype, {
+    getSlowLog: function(groupName, pageNo) {
+        return _data[groupName + '-' + pageNo];
     },
     emitChange: function() {
         this.emit(CHANGE_EVENT);
@@ -24,15 +24,15 @@ var NodeMetricsStore = assign({}, EventEmitter.prototype, {
 
 AppDispatcher.register(function(action) {
     switch(action.actionType) {
-        case AppConstants.GET_NODE_METRICS:
+        case AppConstants.GET_GROUP_SLOWLOG:
             var newData = {};
-            newData[action.groupName] = action.data;
+            newData[action.groupName + '-' + action.data.current_page] = action.data;
             _data = newData;
-            NodeMetricsStore.emitChange();
+            GroupSlowLogStore.emitChange();
             break;
         default:
-            // no operation
+        // no operation
     }
 });
 
-module.exports = NodeMetricsStore;
+module.exports = GroupSlowLogStore;

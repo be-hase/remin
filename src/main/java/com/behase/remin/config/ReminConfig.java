@@ -102,6 +102,11 @@ public class ReminConfig {
                 StringUtils.defaultIfBlank(
                         scheduler.getCollectStaticsInfoMaxCount(),
                         SchedulerConfig.DEFAULT_COLLECT_STATICS_INFO_MAX_COUNT));
+        prop.setProperty(
+                "scheduler.collectSlowLogMaxCount",
+                StringUtils.defaultIfBlank(
+                        scheduler.getCollectSlowLogMaxCount(),
+                        SchedulerConfig.DEFAULT_COLLECT_SLOW_LOG_MAX_COUNT));
 
         // notice email
         prop.setProperty(

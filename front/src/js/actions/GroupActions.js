@@ -131,6 +131,19 @@ var GroupActions = {
         });
 
         ApiUtils.Group.changeGroupName(groupName, data, callbacks);
+    },
+    getSlowLog: function(groupName, data, callbacks) {
+        callbacks = callbacks || {};
+
+        Utils.wrapSuccess(callbacks, function(data) {
+            AppDispatcher.dispatch({
+                actionType: AppConstants.GET_GROUP_SLOWLOG,
+                groupName: groupName,
+                data: data
+            });
+        });
+
+        ApiUtils.Group.getSlowLog(groupName, data, callbacks);
     }
 };
 

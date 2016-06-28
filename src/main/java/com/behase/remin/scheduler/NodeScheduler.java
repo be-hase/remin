@@ -7,6 +7,7 @@ import com.behase.remin.model.*;
 import com.behase.remin.service.GroupService;
 import com.behase.remin.service.NodeService;
 import com.behase.remin.service.NotifyService;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -58,6 +59,9 @@ public class NodeScheduler {
     @Value("${scheduler.collectStaticsInfoMaxCount:" + SchedulerConfig.DEFAULT_COLLECT_STATICS_INFO_MAX_COUNT + "}")
     private long collectStaticsInfoMaxCount;
 
+    @Value("${scheduler.collectSlowLogMaxCount:" + SchedulerConfig.DEFAULT_COLLECT_SLOW_LOG_MAX_COUNT + "}")
+    private long collectSlowLogMaxCount;
+
     @Value("${redis.prefixKey}")
     private String redisPrefixKey;
 
@@ -84,6 +88,7 @@ public class NodeScheduler {
                 Group group = groupService.getGroup(groupName);
                 List<Node> nodes = group.getNodes().stream().filter(node -> node.isConnected()).collect(Collectors.toList());
                 Map<String, Map<String, String>> staticsInfos = Maps.newLinkedHashMap();
+                List<SlowLog> slowLogs = Lists.newArrayList();
 
                 for (Node node : nodes) {
                     try {
@@ -91,26 +96,65 @@ public class NodeScheduler {
                         Map<String, String> staticsInfo = nodeService.getStaticsInfo(node.getHostAndPort(), node.getPassword());
                         staticsInfos.put(node.getHostAndPort(), staticsInfo);
 
+                        if (collectSlowLogMaxCount > 0) {
+                            slowLogs.addAll(nodeService.getSlowLogAndReset(node.getHostAndPort(), node.getPassword()));
+                        }
+
                         try (Jedis jedis = datastoreJedisPool.getResource()) {
                             String key = Constants.getNodeStaticsInfoRedisKey(redisPrefixKey, groupName, node.getHostAndPort());
                             jedis.lpush(key, mapper.writeValueAsString(staticsInfo));
                             jedis.ltrim(key, 0, collectStaticsInfoMaxCount - 1);
                         }
                     } catch (Exception e) {
-                        log.error("collectStaticsIndo fail. groupName={}, hostAndPort={}", groupName, node.getHostAndPort(), e);
+                        log.error("collectStaticsInfo fail. groupName={}, hostAndPort={}", groupName, node.getHostAndPort(), e);
                     }
                 }
 
-                outputMetrics(group, staticsInfos);
+                // sort slowLog, and save
+                try {
+                    saveSlowLogs(slowLogs, groupName);
+                } catch (Exception e) {
+                    log.error("saveSlowLogs fail. groupName={}", groupName, e);
+                }
 
+                // Output metrics
+                try {
+                    outputMetrics(group, staticsInfos);
+                } catch (Exception e) {
+                    log.error("outputMetrics fail. groupName={}", groupName, e);
+                }
+
+                // Notice
                 if (notice != null) {
                     checkThresholdAndPublishNotify(notice, group, staticsInfos);
                 }
             } catch (Exception e) {
-                log.error("collectStaticsIndo fail. {}", groupName, e);
+                log.error("collectStaticsInfo fail. {}", groupName, e);
             }
         }
         log.info("collectStaticsInfo finish");
+    }
+
+    void saveSlowLogs(List<SlowLog> slowLogs, String groupName) {
+        if (slowLogs.size() == 0) {
+            return;
+        }
+
+        String key = Constants.getGroupSlowLogRedisKey(redisPrefixKey, groupName);
+
+        slowLogs.sort((i, k) -> Long.compare(i.getTimeStamp(), k.getTimeStamp()));
+        List<String> slowLogStrList = slowLogs.stream().map(v -> {
+            try {
+                return mapper.writeValueAsString(v);
+            } catch (JsonProcessingException ignore) {
+                return null;
+            }
+        }).filter(v -> v != null).collect(Collectors.toList());
+
+        try (Jedis jedis = datastoreJedisPool.getResource()) {
+            jedis.lpush(key, slowLogStrList.toArray(new String[slowLogs.size()]));
+            jedis.ltrim(key, 0, collectSlowLogMaxCount - 1);
+        }
     }
 
     public void outputMetrics(Group group, Map<String, Map<String, String>> staticsInfos) {

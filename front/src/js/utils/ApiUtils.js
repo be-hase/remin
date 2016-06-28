@@ -178,6 +178,17 @@ var ApiUtils = {
             };
             _.assign(ajaxOptions, callbacks);
             return $.ajax(ajaxOptions);
+        },
+        getSlowLog: function(groupName, data, callbacks) {
+            var apiUrl = BASE_URL + '/api/group/' + groupName + '/slowlog';
+
+            var ajaxOptions = {
+                type: 'GET',
+                url: apiUrl,
+                data: data
+            };
+            _.assign(ajaxOptions, callbacks);
+            return $.ajax(ajaxOptions);
         }
     },
     User: {
