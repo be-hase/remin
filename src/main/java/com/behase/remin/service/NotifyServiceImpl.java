@@ -4,6 +4,7 @@ import com.behase.remin.model.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -80,7 +81,12 @@ public class NotifyServiceImpl implements NotifyService {
         }
 
         String from = StringUtils.trim(StringUtils.defaultIfBlank(notice.getMail().getFrom(), noticeMailFrom));
-        List<String> toList = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(notice.getMail().getTo());
+        List<String> toList;
+        if (StringUtils.isNotBlank(notice.getMail().getTo())) {
+            toList = Splitter.on(",").trimResults().omitEmptyStrings().splitToList(notice.getMail().getTo());
+        } else {
+            toList = Lists.newArrayList();
+        }
         String[] to = toList.toArray(new String[toList.size()]);
 
         if (StringUtils.isBlank(from)) {
