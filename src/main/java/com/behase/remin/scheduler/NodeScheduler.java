@@ -145,7 +145,7 @@ public class NodeScheduler {
         try (Jedis jedis = datastoreJedisPool.getResource()) {
             String key = Constants.getGroupSlowLogRedisKey(redisPrefixKey, groupName);
 
-            PagerData<SlowLog> mostRecentPd = groupService.getGroupSlowLogHistory(groupName, 0, 0);
+            PagerData<SlowLog> mostRecentPd = groupService.getGroupSlowLogHistory(groupName, 0, 1);
             final long mostRecent = mostRecentPd.getData().isEmpty() ? 0L : mostRecentPd.getData().get(0).getTimeStamp();
 
             // filter by timestamp
