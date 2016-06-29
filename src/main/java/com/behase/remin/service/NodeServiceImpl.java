@@ -88,13 +88,12 @@ public class NodeServiceImpl implements NodeService {
     }
 
     @Override
-    public List<SlowLog> getSlowLogAndReset(String hostAndPort, String password) {
+    public List<SlowLog> getSlowLog(String hostAndPort, String password) {
         try (Jedis jedis = JedisUtils.getJedisByHostAndPort(hostAndPort)) {
             if (StringUtils.isNotBlank(password)) {
                 jedis.auth(password);
             }
             List<Slowlog> slowLogs = jedis.slowlogGet(100);
-            jedis.slowlogReset();
 
             return slowLogs.stream()
                     .map(v -> SlowLog.builder()

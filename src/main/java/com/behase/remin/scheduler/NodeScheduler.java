@@ -24,6 +24,7 @@ import redis.clients.jedis.JedisPool;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -87,7 +88,7 @@ public class NodeScheduler {
                 Group group = groupService.getGroup(groupName);
                 List<Node> nodes = group.getNodes().stream().filter(node -> node.isConnected()).collect(Collectors.toList());
                 Map<String, Map<String, String>> staticsInfos = Maps.newLinkedHashMap();
-                List<SlowLog> slowLogs = Lists.newArrayList();
+                List<SlowLog> slowLogs = Collections.synchronizedList(Lists.newArrayList());
 
                 for (Node node : nodes) {
                     try {
@@ -96,7 +97,7 @@ public class NodeScheduler {
                         staticsInfos.put(node.getHostAndPort(), staticsInfo);
 
                         if (collectSlowLogMaxCount > 0) {
-                            slowLogs.addAll(nodeService.getSlowLogAndReset(node.getHostAndPort(), node.getPassword()));
+                            slowLogs.addAll(nodeService.getSlowLog(node.getHostAndPort(), node.getPassword()));
                         }
 
                         try (Jedis jedis = datastoreJedisPool.getResource()) {
@@ -141,24 +142,34 @@ public class NodeScheduler {
     }
 
     void saveSlowLogs(List<SlowLog> slowLogs, String groupName) {
-        if (slowLogs.size() == 0) {
-            return;
-        }
-
-        String key = Constants.getGroupSlowLogRedisKey(redisPrefixKey, groupName);
-
-        slowLogs.sort((i, k) -> Long.compare(i.getTimeStamp(), k.getTimeStamp()));
-        List<String> slowLogStrList = slowLogs.stream().map(v -> {
-            try {
-                return mapper.writeValueAsString(v);
-            } catch (JsonProcessingException ignore) {
-                return null;
-            }
-        }).filter(v -> v != null).collect(Collectors.toList());
-
         try (Jedis jedis = datastoreJedisPool.getResource()) {
-            jedis.lpush(key, slowLogStrList.toArray(new String[slowLogs.size()]));
-            jedis.ltrim(key, 0, collectSlowLogMaxCount - 1);
+            String key = Constants.getGroupSlowLogRedisKey(redisPrefixKey, groupName);
+
+            PagerData<SlowLog> mostRecentPd = groupService.getGroupSlowLogHistory(groupName, 0, 0);
+            final long mostRecent = mostRecentPd.getData().isEmpty() ? 0L : mostRecentPd.getData().get(0).getTimeStamp();
+
+            // filter by timestamp
+            slowLogs = slowLogs.stream().filter(v -> v.getTimeStamp() > mostRecent).collect(Collectors.toList());
+
+            if (slowLogs.size() == 0) {
+                return;
+            }
+
+            // sort by timestamp
+            slowLogs.sort((i, k) -> Long.compare(i.getTimeStamp(), k.getTimeStamp()));
+
+            List<String> slowLogStrList = slowLogs.stream().map(v -> {
+                try {
+                    return mapper.writeValueAsString(v);
+                } catch (JsonProcessingException ignore) {
+                    return null;
+                }
+            }).filter(v -> v != null).collect(Collectors.toList());
+
+            if (slowLogStrList.size() > 0) {
+                jedis.lpush(key, slowLogStrList.toArray(new String[slowLogStrList.size()]));
+                jedis.ltrim(key, 0, collectSlowLogMaxCount - 1);
+            }
         }
     }
 

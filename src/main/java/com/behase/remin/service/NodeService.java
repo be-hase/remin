@@ -11,5 +11,5 @@ public interface NodeService {
     Map<String, List<List<Object>>> getStaticsInfoHistory(String groupName, String hostAndPort, List<String> fields,
                                                           long start, long end);
 
-    List<SlowLog> getSlowLogAndReset(String hostAndPort, String password);
+    List<SlowLog> getSlowLog(String hostAndPort, String password);
 }
